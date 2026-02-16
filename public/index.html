@@ -9,11 +9,13 @@
 </head>
 <body>
 
+  <!-- JOIN -->
   <div id="join-screen">
     <div class="join-card">
       <div class="logo"><i class="fas fa-bolt"></i></div>
       <h1>NEXUS</h1>
       <p class="subtitle">Encrypted peer-to-peer calls</p>
+      <input type="text" id="nickname-input" placeholder="Your name" autocomplete="off" spellcheck="false" maxlength="20" />
       <div class="input-group">
         <input type="text" id="room-input" placeholder="Room ID" autocomplete="off" spellcheck="false" />
         <button id="join-btn"><i class="fas fa-arrow-right"></i></button>
@@ -28,19 +30,21 @@
     </div>
   </div>
 
+  <!-- CALL -->
   <div id="call-screen" class="hidden">
     <div id="sidebar">
       <div class="sidebar-header"><i class="fas fa-bolt"></i><span>NEXUS</span></div>
       <div class="channel-section">
         <div class="channel-label">Voice Channel</div>
         <div class="channel-item active">
-          <i class="fas fa-signal-stream"></i>
+          <i class="fas fa-wifi"></i>
           <span id="sidebar-room">Room</span>
         </div>
         <div class="channel-users" id="channel-users-list">
-          <div class="channel-user">
+          <div class="channel-user" id="sidebar-user-self">
+            <div class="status-dot online"></div>
             <div class="user-avatar local-avatar"><i class="fas fa-user"></i></div>
-            <span>You</span>
+            <span id="sidebar-self-name">You</span>
             <div class="user-indicators">
               <i class="fas fa-microphone" id="indicator-mic"></i>
               <i class="fas fa-video" id="indicator-cam"></i>
@@ -50,9 +54,10 @@
       </div>
       <div class="user-panel">
         <div class="user-info">
+          <div class="status-dot online small-dot"></div>
           <div class="user-avatar local-avatar small"><i class="fas fa-user"></i></div>
           <div class="user-name">
-            <span>You</span>
+            <span id="panel-self-name">You</span>
             <span class="user-status" id="connection-quality">Connecting...</span>
           </div>
         </div>
@@ -73,6 +78,7 @@
           <span class="top-bar-hint" id="call-status">Connecting...</span>
         </div>
         <div class="top-bar-right">
+          <button id="invite-btn" class="top-btn" title="Copy invite link"><i class="fas fa-link"></i></button>
           <button id="toggle-fullscreen" class="top-btn" title="Fullscreen"><i class="fas fa-expand"></i></button>
         </div>
       </div>
@@ -83,24 +89,57 @@
           <div class="video-overlay hidden" id="local-overlay">
             <div class="no-video-avatar small"><i class="fas fa-user"></i></div>
           </div>
-          <div class="video-name"><span>You</span></div>
+          <div class="video-name"><span id="local-video-name">You</span></div>
           <div class="speaking-indicator hidden" id="local-speaking"><i class="fas fa-volume-high"></i></div>
         </div>
       </div>
+
+      <!-- Reactions float area -->
+      <div id="reactions-float"></div>
+
+      <!-- Toast -->
+      <div id="toast-container"></div>
+
+      <!-- Copied tooltip -->
+      <div id="copied-tooltip" class="hidden">Copied!</div>
 
       <div id="call-controls">
         <button id="toggle-mic-2" class="call-btn" title="Mic"><i class="fas fa-microphone"></i></button>
         <button id="toggle-cam-2" class="call-btn" title="Camera"><i class="fas fa-video"></i></button>
         <button id="switch-cam-btn" class="call-btn" title="Switch Camera"><i class="fas fa-camera-rotate"></i></button>
         <button id="toggle-screen-btn" class="call-btn" title="Share Screen"><i class="fas fa-display"></i></button>
+        <div class="reactions-bar">
+          <button class="react-btn" data-emoji="👍">👍</button>
+          <button class="react-btn" data-emoji="🎉">🎉</button>
+          <button class="react-btn" data-emoji="😂">😂</button>
+          <button class="react-btn" data-emoji="🔥">🔥</button>
+          <button class="react-btn" data-emoji="❤️">❤️</button>
+          <button class="react-btn" data-emoji="💀">💀</button>
+        </div>
         <div class="volume-control">
           <i class="fas fa-volume-high"></i>
           <input type="range" id="volume-slider" min="0" max="100" value="100" />
         </div>
+        <button id="chat-toggle-btn" class="call-btn" title="Chat"><i class="fas fa-comment"></i></button>
         <button id="hang-up" class="call-btn danger" title="Leave"><i class="fas fa-phone-slash"></i></button>
       </div>
     </div>
 
+    <!-- Chat Panel -->
+    <div id="chat-panel" class="hidden">
+      <div id="chat-header">
+        <span><i class="fas fa-comment"></i> Chat</span>
+        <button id="chat-close"><i class="fas fa-xmark"></i></button>
+      </div>
+      <div id="chat-messages"></div>
+      <div id="typing-indicator" class="hidden"><span id="typing-text">Someone is typing...</span></div>
+      <div id="chat-input-area">
+        <input type="text" id="chat-input" placeholder="Message..." autocomplete="off" spellcheck="false" maxlength="2000" />
+        <button id="chat-send"><i class="fas fa-paper-plane"></i></button>
+      </div>
+    </div>
+
+    <!-- Settings Modal -->
     <div id="settings-modal" class="modal hidden">
       <div class="modal-backdrop"></div>
       <div class="modal-content">
