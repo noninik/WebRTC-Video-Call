@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Звонок</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="app">
+    <!-- Экран входа -->
+    <div id="join-screen">
+      <h1>📞 Звонок</h1>
+      <p>Введите ID комнаты и отправьте его другу</p>
+      <input type="text" id="room-input" placeholder="Например: my-room-123" autocomplete="off" />
+      <button id="join-btn">Войти</button>
+      <button id="random-btn">Случайная комната</button>
+      <p id="status-text"></p>
+    </div>
+
+    <!-- Экран звонка -->
+    <div id="call-screen" class="hidden">
+      <div id="videos">
+        <div class="video-box">
+          <video id="local-video" autoplay muted playsinline></video>
+          <span class="label">Вы</span>
+        </div>
+        <div class="video-box">
+          <video id="remote-video" autoplay playsinline></video>
+          <span class="label">Друг</span>
+        </div>
+      </div>
+      <div id="controls">
+        <button id="toggle-mic" title="Микрофон">🎤</button>
+        <button id="toggle-cam" title="Камера">📷</button>
+        <button id="hang-up" title="Положить трубку">📕</button>
+      </div>
+      <p id="call-status"></p>
+      <p id="room-display"></p>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
