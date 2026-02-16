@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>VoiceHub</title>
+  <title>NEXUS</title>
   <link rel="stylesheet" href="style.css" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
 </head>
@@ -11,36 +11,36 @@
 
   <div id="join-screen">
     <div class="join-card">
-      <div class="logo"><i class="fas fa-headset"></i></div>
-      <h1>VoiceHub</h1>
-      <p class="subtitle">Голосовые и видеозвонки без регистрации</p>
+      <div class="logo"><i class="fas fa-bolt"></i></div>
+      <h1>NEXUS</h1>
+      <p class="subtitle">Encrypted peer-to-peer calls</p>
       <div class="input-group">
-        <input type="text" id="room-input" placeholder="Введите ID комнаты" autocomplete="off" spellcheck="false" />
+        <input type="text" id="room-input" placeholder="Room ID" autocomplete="off" spellcheck="false" />
         <button id="join-btn"><i class="fas fa-arrow-right"></i></button>
       </div>
-      <button id="random-btn"><i class="fas fa-shuffle"></i> Случайная комната</button>
+      <button id="random-btn"><i class="fas fa-shuffle"></i> Generate Room</button>
       <p id="status-text"></p>
       <div class="features">
-        <div class="feature"><i class="fas fa-bolt"></i><span>Без лагов</span></div>
-        <div class="feature"><i class="fas fa-lock"></i><span>P2P</span></div>
-        <div class="feature"><i class="fas fa-user-slash"></i><span>Без регистрации</span></div>
+        <div class="feature"><i class="fas fa-bolt"></i><span>Zero Lag</span></div>
+        <div class="feature"><i class="fas fa-shield-halved"></i><span>E2E</span></div>
+        <div class="feature"><i class="fas fa-ghost"></i><span>Anonymous</span></div>
       </div>
     </div>
   </div>
 
   <div id="call-screen" class="hidden">
     <div id="sidebar">
-      <div class="sidebar-header"><i class="fas fa-headset"></i><span>VoiceHub</span></div>
+      <div class="sidebar-header"><i class="fas fa-bolt"></i><span>NEXUS</span></div>
       <div class="channel-section">
-        <div class="channel-label">ГОЛОСОВОЙ КАНАЛ</div>
+        <div class="channel-label">Voice Channel</div>
         <div class="channel-item active">
-          <i class="fas fa-volume-high"></i>
-          <span id="sidebar-room">Комната</span>
+          <i class="fas fa-signal-stream"></i>
+          <span id="sidebar-room">Room</span>
         </div>
         <div class="channel-users" id="channel-users-list">
           <div class="channel-user">
             <div class="user-avatar local-avatar"><i class="fas fa-user"></i></div>
-            <span>Вы</span>
+            <span>You</span>
             <div class="user-indicators">
               <i class="fas fa-microphone" id="indicator-mic"></i>
               <i class="fas fa-video" id="indicator-cam"></i>
@@ -52,14 +52,14 @@
         <div class="user-info">
           <div class="user-avatar local-avatar small"><i class="fas fa-user"></i></div>
           <div class="user-name">
-            <span>Вы</span>
-            <span class="user-status" id="connection-quality">Подключение...</span>
+            <span>You</span>
+            <span class="user-status" id="connection-quality">Connecting...</span>
           </div>
         </div>
         <div class="user-controls">
-          <button id="toggle-mic" class="control-btn" title="Микрофон"><i class="fas fa-microphone"></i></button>
-          <button id="toggle-cam" class="control-btn" title="Камера"><i class="fas fa-video"></i></button>
-          <button id="settings-btn" class="control-btn" title="Настройки"><i class="fas fa-gear"></i></button>
+          <button id="toggle-mic" class="control-btn" title="Mic"><i class="fas fa-microphone"></i></button>
+          <button id="toggle-cam" class="control-btn" title="Camera"><i class="fas fa-video"></i></button>
+          <button id="settings-btn" class="control-btn" title="Settings"><i class="fas fa-gear"></i></button>
         </div>
       </div>
     </div>
@@ -67,13 +67,13 @@
     <div id="main-area">
       <div id="top-bar">
         <div class="top-bar-left">
-          <i class="fas fa-volume-high"></i>
-          <span id="top-room-name">Комната</span>
+          <i class="fas fa-bolt"></i>
+          <span id="top-room-name">Room</span>
           <span class="separator">|</span>
-          <span class="top-bar-hint" id="call-status">Подключение...</span>
+          <span class="top-bar-hint" id="call-status">Connecting...</span>
         </div>
         <div class="top-bar-right">
-          <button id="toggle-fullscreen" class="top-btn" title="Полный экран"><i class="fas fa-expand"></i></button>
+          <button id="toggle-fullscreen" class="top-btn" title="Fullscreen"><i class="fas fa-expand"></i></button>
         </div>
       </div>
 
@@ -83,23 +83,21 @@
           <div class="video-overlay hidden" id="local-overlay">
             <div class="no-video-avatar small"><i class="fas fa-user"></i></div>
           </div>
-          <div class="video-name"><span>Вы</span></div>
-          <div class="speaking-indicator hidden" id="local-speaking">
-            <i class="fas fa-volume-high"></i>
-          </div>
+          <div class="video-name"><span>You</span></div>
+          <div class="speaking-indicator hidden" id="local-speaking"><i class="fas fa-volume-high"></i></div>
         </div>
       </div>
 
       <div id="call-controls">
-        <button id="toggle-mic-2" class="call-btn" title="Микрофон"><i class="fas fa-microphone"></i></button>
-        <button id="toggle-cam-2" class="call-btn" title="Камера"><i class="fas fa-video"></i></button>
-        <button id="switch-cam-btn" class="call-btn" title="Переключить камеру"><i class="fas fa-camera-rotate"></i></button>
-        <button id="toggle-screen-btn" class="call-btn" title="Демонстрация экрана"><i class="fas fa-display"></i></button>
+        <button id="toggle-mic-2" class="call-btn" title="Mic"><i class="fas fa-microphone"></i></button>
+        <button id="toggle-cam-2" class="call-btn" title="Camera"><i class="fas fa-video"></i></button>
+        <button id="switch-cam-btn" class="call-btn" title="Switch Camera"><i class="fas fa-camera-rotate"></i></button>
+        <button id="toggle-screen-btn" class="call-btn" title="Share Screen"><i class="fas fa-display"></i></button>
         <div class="volume-control">
           <i class="fas fa-volume-high"></i>
           <input type="range" id="volume-slider" min="0" max="100" value="100" />
         </div>
-        <button id="hang-up" class="call-btn danger" title="Отключиться"><i class="fas fa-phone-slash"></i></button>
+        <button id="hang-up" class="call-btn danger" title="Leave"><i class="fas fa-phone-slash"></i></button>
       </div>
     </div>
 
@@ -107,32 +105,32 @@
       <div class="modal-backdrop"></div>
       <div class="modal-content">
         <div class="modal-header">
-          <h2><i class="fas fa-gear"></i> Настройки</h2>
+          <h2><i class="fas fa-gear"></i> Settings</h2>
           <button class="modal-close" id="settings-close"><i class="fas fa-xmark"></i></button>
         </div>
         <div class="modal-body">
           <div class="setting-group">
-            <label>Микрофон</label>
+            <label>Microphone</label>
             <select id="mic-select"></select>
           </div>
           <div class="setting-group">
-            <label>Динамик</label>
+            <label>Speaker</label>
             <select id="speaker-select"></select>
           </div>
           <div class="setting-group">
-            <label>Камера</label>
+            <label>Camera</label>
             <select id="cam-select"></select>
-            <button id="apply-cam-btn" class="apply-btn">Применить</button>
+            <button id="apply-cam-btn" class="apply-btn">Apply</button>
           </div>
           <div class="setting-group">
-            <label>Тест микрофона</label>
+            <label>Mic Test</label>
             <div class="mic-level-bar"><div class="mic-level-fill" id="mic-level"></div></div>
           </div>
           <div class="setting-group">
-            <label><input type="checkbox" id="noise-toggle" checked /> Шумоподавление</label>
+            <label><input type="checkbox" id="noise-toggle" checked /> Noise Suppression</label>
           </div>
           <div class="setting-group">
-            <label><input type="checkbox" id="echo-toggle" checked /> Эхоподавление</label>
+            <label><input type="checkbox" id="echo-toggle" checked /> Echo Cancellation</label>
           </div>
         </div>
       </div>
