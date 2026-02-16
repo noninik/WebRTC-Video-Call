@@ -449,5 +449,8 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg-1);color:v
   .volume-control{display:none}
   .reactions-bar{display:none}
   .join-card{margin:16px;padding:32px 20px}
-  #chat-panel{width:100%;top:52px}
+  #chat-panel{width:100%;top:52px
+  #emoji-picker { width: 260px; height: 300px; }
+  #gif-picker { width: 280px; height: 340px; }
+  
 }
