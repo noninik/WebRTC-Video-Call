@@ -279,3 +279,160 @@ const lc=document.getElementById('local-container');let drag=false,dx,dy;
 lc.addEventListener('mousedown',e=>{drag=true;dx=e.clientX-lc.offsetLeft;dy=e.clientY-lc.offsetTop;lc.style.cursor='grabbing';lc.style.transition='none';});
 document.addEventListener('mousemove',e=>{if(!drag)return;lc.style.left=(e.clientX-dx)+'px';lc.style.top=(e.clientY-dy)+'px';lc.style.right='auto';lc.style.bottom='auto';});
 document.addEventListener('mouseup',()=>{drag=false;lc.style.cursor='grab';});
+// ===== EMOJI PICKER =====
+const emojiBtn = document.getElementById('emoji-btn');
+const emojiPicker = document.getElementById('emoji-picker');
+const emojiSearch = document.getElementById('emoji-search');
+const emojiList = document.getElementById('emoji-list');
+const gifBtn = document.getElementById('gif-btn');
+const gifPicker = document.getElementById('gif-picker');
+const gifSearch = document.getElementById('gif-search');
+const gifResults = document.getElementById('gif-results');
+
+const EMOJIS = {
+  frequent: ['😂','❤️','🔥','👍','😭','🥺','✨','🎉','💀','🤣','😍','🙏','😊','😎','💯','🤔','😈','👀','🫡','💚'],
+  smileys: ['😀','😃','😄','😁','😆','😅','🤣','😂','🙂','😉','😊','😇','🥰','😍','🤩','😘','😗','😋','😛','😜','🤪','😝','🤑','🤗','🤭','🤫','🤔','🫡','🤐','🤨','😐','😑','😶','🫥','😏','😒','🙄','😬','😮‍💨','🤥','😌','😔','😪','🤤','😴','😷','🤒','🤕','🤢','🤮','🥵','🥶','🥴','😵','🤯','🤠','🥳','🥸','😎','🤓','🧐','😕','🫤','😟','🙁','😮','😯','😲','😳','🥺','🥹','😦','😧','😨','😰','😥','😢','😭','😱','😖','😣','😞','😓','😩','😫','🥱','😤','😡','😠','🤬','😈','👿','💀','☠️','💩','🤡','👹','👺','👻','👽','👾','🤖'],
+  people: ['👋','🤚','🖐️','✋','🖖','🫱','🫲','🫳','🫴','👌','🤌','🤏','✌️','🤞','🫰','🤟','🤘','🤙','👈','👉','👆','🖕','👇','☝️','🫵','👍','👎','✊','👊','🤛','🤜','👏','🙌','🫶','👐','🤲','🤝','🙏','💪','🦾','🦿','🦵','🦶','👂','🦻','👃','🧠','🫀','🫁','🦷','🦴','👀','👁️','👅','👄'],
+  animals: ['🐱','🐶','🐭','🐹','🐰','🦊','🐻','🐼','🐻‍❄️','🐨','🐯','🦁','🐮','🐷','🐸','🐵','🙈','🙉','🙊','🐒','🐔','🐧','🐦','🐤','🦆','🦅','🦉','🦇','🐺','🐗','🐴','🦄','🐝','🪱','🐛','🦋','🐌','🐞','🐜','🪰','🪲','🪳','🦟','🦗','🕷️','🦂','🐢','🐍','🦎','🦖','🦕','🐙','🦑','🦐','🦞','🦀','🐡','🐠','🐟','🐬','🐳','🐋','🦈','🐊','🐅','🐆','🦓','🦍','🦧','🐘','🦛','🦏','🐪','🐫','🦒'],
+  food: ['🍕','🍔','🍟','🌭','🥪','🌮','🌯','🫔','🥙','🧆','🥚','🍳','🥘','🍲','🫕','🥣','🥗','🍿','🧈','🧂','🥫','🍱','🍘','🍙','🍚','🍛','🍜','🍝','🍠','🍢','🍣','🍤','🍥','🥮','🍡','🥟','🥠','🥡','🦀','🦞','🦐','🦑','🦪','🍦','🍧','🍨','🍩','🍪','🎂','🍰','🧁','🥧','🍫','🍬','🍭','🍮','🍯','🍼','🥛','☕','🫖','🍵','🍶','🍾','🍷','🍸','🍹','🍺','🍻','🥂','🥃','🫗','🥤','🧋','🧃','🧉','🧊'],
+  objects: ['💡','🔦','🕯️','💰','💵','💎','⚽','🏀','🏈','⚾','🥎','🎾','🏐','🎮','🕹️','🎲','🎭','🎨','🎬','🎤','🎧','🎼','🎹','🥁','🎷','🎺','🎸','🪕','🎻','🎯','🏆','🥇','🥈','🥉','🏅','⌚','📱','💻','⌨️','🖥️','📷','📹','🎥','📞','📺','📻','🔑','🗝️','🔒','🔓','📦','📫','📮','✉️','📝','📁','📂','📅'],
+  symbols: ['❤️','🧡','💛','💚','💙','💜','🖤','🤍','🤎','💔','❤️‍🔥','❤️‍🩹','💕','💞','💓','💗','💖','💘','💝','❣️','✅','❌','⭕','🔴','🟠','🟡','🟢','🔵','🟣','⚫','⚪','🟤','❗','❓','‼️','⁉️','💤','💬','👁️‍🗨️','🗯️','💭','🕐','🕑','🕒','🕓','🕔','🕕','⚡','🌟','✨','💫','🎵','🎶','🔔','🔕','📢','📣','🏁','🚩','🏴','🏳️','🏳️‍🌈']
+};
+
+let currentEmojiCat = 'frequent';
+let emojiPickerOpen = false;
+let gifPickerOpen = false;
+
+function renderEmojis(cat, filter) {
+  emojiList.innerHTML = '';
+  let list = EMOJIS[cat] || EMOJIS.frequent;
+  if (filter) {
+    // Search across all categories
+    list = [];
+    Object.values(EMOJIS).forEach(arr => {
+      arr.forEach(e => { if (!list.includes(e)) list.push(e); });
+    });
+  }
+  list.forEach(e => {
+    const btn = document.createElement('button');
+    btn.className = 'emoji-item';
+    btn.textContent = e;
+    btn.addEventListener('click', () => {
+      chatInput.value += e;
+      chatInput.focus();
+    });
+    emojiList.appendChild(btn);
+  });
+}
+
+// Toggle emoji picker
+emojiBtn.addEventListener('click', () => {
+  if (gifPickerOpen) { gifPicker.classList.add('hidden'); gifBtn.classList.remove('active'); gifPickerOpen = false; }
+  emojiPickerOpen = !emojiPickerOpen;
+  emojiPicker.classList.toggle('hidden', !emojiPickerOpen);
+  emojiBtn.classList.toggle('active', emojiPickerOpen);
+  if (emojiPickerOpen) { renderEmojis(currentEmojiCat); emojiSearch.value = ''; emojiSearch.focus(); }
+});
+
+// Category buttons
+document.querySelectorAll('.emoji-cat-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.emoji-cat-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentEmojiCat = btn.dataset.cat;
+    emojiSearch.value = '';
+    renderEmojis(currentEmojiCat);
+  });
+});
+
+// Search emoji
+emojiSearch.addEventListener('input', () => {
+  const q = emojiSearch.value.trim();
+  if (q) renderEmojis(null, true);
+  else renderEmojis(currentEmojiCat);
+});
+
+// ===== GIF PICKER (Tenor API) =====
+// Free Tenor API key (get yours at https://developers.google.com/tenor)
+const TENOR_KEY = 'AIzaSyAyimkuYQYF_FXVALexPuGQctUWRURdCYQ';
+
+let gifSearchTimeout = null;
+
+gifBtn.addEventListener('click', () => {
+  if (emojiPickerOpen) { emojiPicker.classList.add('hidden'); emojiBtn.classList.remove('active'); emojiPickerOpen = false; }
+  gifPickerOpen = !gifPickerOpen;
+  gifPicker.classList.toggle('hidden', !gifPickerOpen);
+  gifBtn.classList.toggle('active', gifPickerOpen);
+  if (gifPickerOpen) { gifSearch.value = ''; gifSearch.focus(); loadTrendingGifs(); }
+});
+
+async function loadTrendingGifs() {
+  gifResults.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-3);font-size:0.75rem;">Loading...</div>';
+  try {
+    const r = await fetch('https://tenor.googleapis.com/v2/featured?key=' + TENOR_KEY + '&limit=20&media_filter=tinygif');
+    const data = await r.json();
+    renderGifs(data.results);
+  } catch (e) {
+    gifResults.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-3);font-size:0.75rem;">Failed to load GIFs</div>';
+  }
+}
+
+async function searchGifs(query) {
+  if (!query.trim()) { loadTrendingGifs(); return; }
+  gifResults.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-3);font-size:0.75rem;">Searching...</div>';
+  try {
+    const r = await fetch('https://tenor.googleapis.com/v2/search?key=' + TENOR_KEY + '&q=' + encodeURIComponent(query) + '&limit=20&media_filter=tinygif');
+    const data = await r.json();
+    renderGifs(data.results);
+  } catch (e) {
+    gifResults.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-3);font-size:0.75rem;">Search failed</div>';
+  }
+}
+
+function renderGifs(results) {
+  gifResults.innerHTML = '';
+  if (!results || !results.length) {
+    gifResults.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-3);font-size:0.75rem;">No GIFs found</div>';
+    return;
+  }
+  results.forEach(g => {
+    const url = g.media_formats?.tinygif?.url || g.media_formats?.gif?.url;
+    if (!url) return;
+    const div = document.createElement('div');
+    div.className = 'gif-item';
+    const img = document.createElement('img');
+    img.src = url;
+    img.alt = 'GIF';
+    img.loading = 'lazy';
+    div.appendChild(img);
+    div.addEventListener('click', () => {
+      // Send GIF as chat message
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ type: 'chat', text: '', gif: url }));
+      }
+      gifPickerOpen = false;
+      gifPicker.classList.add('hidden');
+      gifBtn.classList.remove('active');
+    });
+    gifResults.appendChild(div);
+  });
+}
+
+gifSearch.addEventListener('input', () => {
+  if (gifSearchTimeout) clearTimeout(gifSearchTimeout);
+  gifSearchTimeout = setTimeout(() => searchGifs(gifSearch.value), 400);
+});
+
+// Close pickers on outside click
+document.addEventListener('click', (e) => {
+  if (emojiPickerOpen && !emojiPicker.contains(e.target) && e.target !== emojiBtn && !emojiBtn.contains(e.target)) {
+    emojiPickerOpen = false;
+    emojiPicker.classList.add('hidden');
+    emojiBtn.classList.remove('active');
+  }
+  if (gifPickerOpen && !gifPicker.contains(e.target) && e.target !== gifBtn && !gifBtn.contains(e.target)) {
+    gifPickerOpen = false;
+    gifPicker.classList.add('hidden');
+    gifBtn.classList.remove('active');
+  }
+});
