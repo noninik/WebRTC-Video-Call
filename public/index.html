@@ -9,111 +9,62 @@
 </head>
 <body>
 
-  <!-- Экран входа -->
   <div id="join-screen">
     <div class="join-card">
-      <div class="logo">
-        <i class="fas fa-headset"></i>
-      </div>
+      <div class="logo"><i class="fas fa-headset"></i></div>
       <h1>VoiceHub</h1>
       <p class="subtitle">Голосовые и видеозвонки без регистрации</p>
-
       <div class="input-group">
         <input type="text" id="room-input" placeholder="Введите ID комнаты" autocomplete="off" spellcheck="false" />
         <button id="join-btn"><i class="fas fa-arrow-right"></i></button>
       </div>
-
-      <button id="random-btn">
-        <i class="fas fa-shuffle"></i> Случайная комната
-      </button>
-
+      <button id="random-btn"><i class="fas fa-shuffle"></i> Случайная комната</button>
       <p id="status-text"></p>
-
       <div class="features">
-        <div class="feature">
-          <i class="fas fa-bolt"></i>
-          <span>Без лагов</span>
-        </div>
-        <div class="feature">
-          <i class="fas fa-lock"></i>
-          <span>P2P шифрование</span>
-        </div>
-        <div class="feature">
-          <i class="fas fa-user-slash"></i>
-          <span>Без регистрации</span>
-        </div>
+        <div class="feature"><i class="fas fa-bolt"></i><span>Без лагов</span></div>
+        <div class="feature"><i class="fas fa-lock"></i><span>P2P</span></div>
+        <div class="feature"><i class="fas fa-user-slash"></i><span>Без регистрации</span></div>
       </div>
     </div>
   </div>
 
-  <!-- Экран звонка -->
   <div id="call-screen" class="hidden">
-
-    <!-- Левая панель — как Discord -->
     <div id="sidebar">
-      <div class="sidebar-header">
-        <i class="fas fa-headset"></i>
-        <span>VoiceHub</span>
-      </div>
-
+      <div class="sidebar-header"><i class="fas fa-headset"></i><span>VoiceHub</span></div>
       <div class="channel-section">
         <div class="channel-label">ГОЛОСОВОЙ КАНАЛ</div>
         <div class="channel-item active">
           <i class="fas fa-volume-high"></i>
           <span id="sidebar-room">Комната</span>
         </div>
-        <div class="channel-users">
-          <div class="channel-user" id="user-local">
-            <div class="user-avatar local-avatar">
-              <i class="fas fa-user"></i>
-            </div>
+        <div class="channel-users" id="channel-users-list">
+          <div class="channel-user">
+            <div class="user-avatar local-avatar"><i class="fas fa-user"></i></div>
             <span>Вы</span>
             <div class="user-indicators">
               <i class="fas fa-microphone" id="indicator-mic"></i>
               <i class="fas fa-video" id="indicator-cam"></i>
             </div>
           </div>
-          <div class="channel-user hidden" id="user-remote">
-            <div class="user-avatar remote-avatar">
-              <i class="fas fa-user"></i>
-            </div>
-            <span>Друг</span>
-            <div class="user-indicators">
-              <i class="fas fa-microphone"></i>
-            </div>
-          </div>
         </div>
       </div>
-
-      <!-- Нижняя панель управления — как Discord -->
       <div class="user-panel">
         <div class="user-info">
-          <div class="user-avatar local-avatar small">
-            <i class="fas fa-user"></i>
-          </div>
+          <div class="user-avatar local-avatar small"><i class="fas fa-user"></i></div>
           <div class="user-name">
             <span>Вы</span>
             <span class="user-status" id="connection-quality">Подключение...</span>
           </div>
         </div>
         <div class="user-controls">
-          <button id="toggle-mic" class="control-btn" title="Микрофон">
-            <i class="fas fa-microphone"></i>
-          </button>
-          <button id="toggle-cam" class="control-btn" title="Камера">
-            <i class="fas fa-video"></i>
-          </button>
-          <button id="settings-btn" class="control-btn" title="Настройки">
-            <i class="fas fa-gear"></i>
-          </button>
+          <button id="toggle-mic" class="control-btn" title="Микрофон"><i class="fas fa-microphone"></i></button>
+          <button id="toggle-cam" class="control-btn" title="Камера"><i class="fas fa-video"></i></button>
+          <button id="settings-btn" class="control-btn" title="Настройки"><i class="fas fa-gear"></i></button>
         </div>
       </div>
     </div>
 
-    <!-- Основная область -->
     <div id="main-area">
-
-      <!-- Верхняя панель -->
       <div id="top-bar">
         <div class="top-bar-left">
           <i class="fas fa-volume-high"></i>
@@ -122,75 +73,36 @@
           <span class="top-bar-hint" id="call-status">Подключение...</span>
         </div>
         <div class="top-bar-right">
-          <button id="toggle-screen" class="top-btn" title="Демонстрация экрана">
-            <i class="fas fa-desktop"></i>
-          </button>
-          <button id="toggle-pip" class="top-btn" title="Картинка в картинке">
-            <i class="fas fa-up-right-and-down-left-from-center"></i>
-          </button>
-          <button id="toggle-fullscreen" class="top-btn" title="Полный экран">
-            <i class="fas fa-expand"></i>
-          </button>
+          <button id="toggle-fullscreen" class="top-btn" title="Полный экран"><i class="fas fa-expand"></i></button>
         </div>
       </div>
 
-      <!-- Видео -->
       <div id="videos">
-        <div class="video-container" id="remote-container">
-          <video id="remote-video" autoplay playsinline></video>
-          <div class="video-overlay hidden" id="remote-overlay">
-            <div class="no-video-avatar">
-              <i class="fas fa-user"></i>
-            </div>
-          </div>
-          <div class="video-name">
-            <span>Друг</span>
-          </div>
-          <div class="speaking-indicator hidden" id="remote-speaking">
-            <i class="fas fa-volume-high"></i>
-          </div>
-        </div>
         <div class="video-container local-small" id="local-container">
           <video id="local-video" autoplay muted playsinline></video>
           <div class="video-overlay hidden" id="local-overlay">
-            <div class="no-video-avatar small">
-              <i class="fas fa-user"></i>
-            </div>
+            <div class="no-video-avatar small"><i class="fas fa-user"></i></div>
           </div>
-          <div class="video-name">
-            <span>Вы</span>
-          </div>
+          <div class="video-name"><span>Вы</span></div>
           <div class="speaking-indicator hidden" id="local-speaking">
             <i class="fas fa-volume-high"></i>
           </div>
         </div>
       </div>
 
-      <!-- Нижние кнопки звонка -->
       <div id="call-controls">
-        <button id="toggle-mic-2" class="call-btn" title="Микрофон">
-          <i class="fas fa-microphone"></i>
-        </button>
-        <button id="toggle-cam-2" class="call-btn" title="Камера">
-          <i class="fas fa-video"></i>
-        </button>
-        <button id="toggle-screen-2" class="call-btn" title="Демонстрация экрана">
-          <i class="fas fa-display"></i>
-        </button>
-        <button id="toggle-noise" class="call-btn active" title="Шумоподавление">
-          <i class="fas fa-wand-magic-sparkles"></i>
-        </button>
+        <button id="toggle-mic-2" class="call-btn" title="Микрофон"><i class="fas fa-microphone"></i></button>
+        <button id="toggle-cam-2" class="call-btn" title="Камера"><i class="fas fa-video"></i></button>
+        <button id="switch-cam-btn" class="call-btn" title="Переключить камеру"><i class="fas fa-camera-rotate"></i></button>
+        <button id="toggle-screen-btn" class="call-btn" title="Демонстрация экрана"><i class="fas fa-display"></i></button>
         <div class="volume-control">
           <i class="fas fa-volume-high"></i>
           <input type="range" id="volume-slider" min="0" max="100" value="100" />
         </div>
-        <button id="hang-up" class="call-btn danger" title="Отключиться">
-          <i class="fas fa-phone-slash"></i>
-        </button>
+        <button id="hang-up" class="call-btn danger" title="Отключиться"><i class="fas fa-phone-slash"></i></button>
       </div>
     </div>
 
-    <!-- Модалка настроек -->
     <div id="settings-modal" class="modal hidden">
       <div class="modal-backdrop"></div>
       <div class="modal-content">
@@ -200,47 +112,27 @@
         </div>
         <div class="modal-body">
           <div class="setting-group">
-            <label>Устройство ввода (микрофон)</label>
+            <label>Микрофон</label>
             <select id="mic-select"></select>
           </div>
           <div class="setting-group">
-            <label>Устройство вывода (динамик)</label>
+            <label>Динамик</label>
             <select id="speaker-select"></select>
           </div>
           <div class="setting-group">
             <label>Камера</label>
             <select id="cam-select"></select>
-          </div>
-          <div class="setting-group">
-            <label>Громкость микрофона</label>
-            <input type="range" id="mic-volume" min="0" max="200" value="100" />
-            <span id="mic-volume-label">100%</span>
-          </div>
-          <div class="setting-group">
-            <label>
-              <input type="checkbox" id="noise-toggle" checked />
-              Шумоподавление
-            </label>
-          </div>
-          <div class="setting-group">
-            <label>
-              <input type="checkbox" id="echo-toggle" checked />
-              Эхоподавление
-            </label>
-          </div>
-          <div class="setting-group">
-            <label>
-              <input type="checkbox" id="agc-toggle" checked />
-              Автоматическая регулировка громкости
-            </label>
+            <button id="apply-cam-btn" class="apply-btn">Применить</button>
           </div>
           <div class="setting-group">
             <label>Тест микрофона</label>
-            <div class="mic-test">
-              <div class="mic-level-bar">
-                <div class="mic-level-fill" id="mic-level"></div>
-              </div>
-            </div>
+            <div class="mic-level-bar"><div class="mic-level-fill" id="mic-level"></div></div>
+          </div>
+          <div class="setting-group">
+            <label><input type="checkbox" id="noise-toggle" checked /> Шумоподавление</label>
+          </div>
+          <div class="setting-group">
+            <label><input type="checkbox" id="echo-toggle" checked /> Эхоподавление</label>
           </div>
         </div>
       </div>
