@@ -11,7 +11,6 @@ const remoteVideo = document.getElementById('remote-video');
 const hangUp = document.getElementById('hang-up');
 const volumeSlider = document.getElementById('volume-slider');
 
-// Settings
 const settingsBtn = document.getElementById('settings-btn');
 const settingsModal = document.getElementById('settings-modal');
 const settingsClose = document.getElementById('settings-close');
@@ -25,7 +24,6 @@ const echoToggle = document.getElementById('echo-toggle');
 const agcToggle = document.getElementById('agc-toggle');
 const micLevel = document.getElementById('mic-level');
 
-// Indicators
 const localOverlay = document.getElementById('local-overlay');
 const remoteOverlay = document.getElementById('remote-overlay');
 const localSpeaking = document.getElementById('local-speaking');
@@ -37,7 +35,6 @@ const indicatorCam = document.getElementById('indicator-cam');
 const sidebarRoom = document.getElementById('sidebar-room');
 const topRoomName = document.getElementById('top-room-name');
 
-// All mic/cam toggle buttons (sidebar + bottom bar)
 const toggleMicBtns = [document.getElementById('toggle-mic'), document.getElementById('toggle-mic-2')];
 const toggleCamBtns = [document.getElementById('toggle-cam'), document.getElementById('toggle-cam-2')];
 const toggleScreenBtns = [document.getElementById('toggle-screen'), document.getElementById('toggle-screen-2')];
@@ -46,10 +43,13 @@ const togglePip = document.getElementById('toggle-pip');
 const toggleFullscreen = document.getElementById('toggle-fullscreen');
 
 // ============ STATE ============
-let ws, pc, localStream, screenStream;
+let ws, localStream, screenStream;
+let myId = null;
 let micOn = true, camOn = true, screenOn = false, noiseOn = true;
-let monitorCtx, analyser;
-let animFrameId;
+let monitorCtx, analyser, animFrameId;
+
+// Хранилище пиров: odString -> { pc, remoteStream }
+const peers = new Map();
 
 const config = {
   iceServers: [
@@ -61,7 +61,6 @@ const config = {
   ]
 };
 
-// ============ UTILITIES ============
 function generateId() {
   return Math.random().toString(36).substring(2, 10);
 }
@@ -70,7 +69,104 @@ function setStatus(text) {
   callStatus.textContent = text;
 }
 
-// ============ AUDIO MONITORING (only for visualization, does NOT touch the stream) ============
+// ============ VIDEO GRID ============
+const videosContainer = document.getElementById('videos');
+
+function createRemoteVideo(odString) {
+  // Удаляем старый если есть
+  removeRemoteVideo(odString);
+
+  const container = document.createElement('div');
+  container.className = 'video-container remote-video-box';
+  container.id = 'video-box-' + odString;
+
+  const video = document.createElement('video');
+  video.autoplay = true;
+  video.playsInline = true;
+  video.id = 'video-' + odString;
+  video.volume = volumeSlider.value / 100;
+
+  const overlay = document.createElement('div');
+  overlay.className = 'video-overlay';
+  overlay.id = 'overlay-' + odString;
+  overlay.innerHTML = '<div class="no-video-avatar"><i class="fas fa-user"></i></div>';
+
+  const nameTag = document.createElement('div');
+  nameTag.className = 'video-name';
+  nameTag.innerHTML = '<span>Участник ' + odString + '</span>';
+
+  const speakDot = document.createElement('div');
+  speakDot.className = 'speaking-indicator hidden';
+  speakDot.id = 'speaking-' + odString;
+  speakDot.innerHTML = '<i class="fas fa-volume-high"></i>';
+
+  container.appendChild(video);
+  container.appendChild(overlay);
+  container.appendChild(nameTag);
+  container.appendChild(speakDot);
+
+  // Вставляем перед локальным видео
+  const localContainer = document.getElementById('local-container');
+  videosContainer.insertBefore(container, localContainer);
+
+  updateVideoLayout();
+  return video;
+}
+
+function removeRemoteVideo(odString) {
+  const box = document.getElementById('video-box-' + odString);
+  if (box) box.remove();
+  updateVideoLayout();
+}
+
+function updateVideoLayout() {
+  const remoteBoxes = videosContainer.querySelectorAll('.remote-video-box');
+  const total = remoteBoxes.length;
+  const localContainer = document.getElementById('local-container');
+
+  if (total === 0) {
+    // Нет удалённых — показываем заглушку
+    remoteOverlay.classList.remove('hidden');
+    const rc = document.getElementById('remote-container');
+    if (rc) rc.classList.remove('hidden');
+    localContainer.className = 'video-container local-small';
+  } else if (total === 1) {
+    // 1 собеседник — он большой, мы маленькие
+    const rc = document.getElementById('remote-container');
+    if (rc) rc.classList.add('hidden');
+    remoteBoxes[0].classList.add('remote-main');
+    remoteBoxes[0].classList.remove('remote-grid');
+    localContainer.className = 'video-container local-small';
+  } else {
+    // 2+ собеседников — сетка
+    const rc = document.getElementById('remote-container');
+    if (rc) rc.classList.add('hidden');
+    remoteBoxes.forEach((box) => {
+      box.classList.remove('remote-main');
+      box.classList.add('remote-grid');
+    });
+    localContainer.className = 'video-container remote-grid';
+  }
+
+  // Обновляем счётчик в сайдбаре
+  updateSidebarUsers();
+}
+
+function updateSidebarUsers() {
+  const count = peers.size;
+  if (count > 0) {
+    userRemote.classList.remove('hidden');
+    userRemote.querySelector('span').textContent = count === 1 ? 'Друг' : `${count} участников`;
+    connectionQuality.textContent = 'Подключено';
+    connectionQuality.style.color = '#23a559';
+  } else {
+    userRemote.classList.add('hidden');
+    connectionQuality.textContent = 'Ожидание...';
+    connectionQuality.style.color = '';
+  }
+}
+
+// ============ AUDIO MONITORING ============
 function setupAudioMonitor(stream) {
   try {
     monitorCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -78,7 +174,6 @@ function setupAudioMonitor(stream) {
     analyser = monitorCtx.createAnalyser();
     analyser.fftSize = 256;
     source.connect(analyser);
-    // НЕ подключаем к destination — только слушаем уровень
     monitorMicLevel();
   } catch (e) {
     console.log('Audio monitor error:', e);
@@ -87,7 +182,6 @@ function setupAudioMonitor(stream) {
 
 function monitorMicLevel() {
   if (!analyser) return;
-
   const data = new Uint8Array(analyser.frequencyBinCount);
 
   function update() {
@@ -96,26 +190,49 @@ function monitorMicLevel() {
     for (let i = 0; i < data.length; i++) sum += data[i];
     const avg = sum / data.length;
     const pct = Math.min(100, (avg / 128) * 100);
-
     micLevel.style.width = pct + '%';
 
-    // Speaking indicator
     if (pct > 10 && micOn) {
       localSpeaking.classList.remove('hidden');
     } else {
       localSpeaking.classList.add('hidden');
     }
-
     animFrameId = requestAnimationFrame(update);
   }
   update();
+}
+
+function monitorRemoteAudio(stream, odString) {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const source = ctx.createMediaStreamSource(stream);
+    const ra = ctx.createAnalyser();
+    ra.fftSize = 256;
+    source.connect(ra);
+
+    const data = new Uint8Array(ra.frequencyBinCount);
+    function check() {
+      ra.getByteFrequencyData(data);
+      let sum = 0;
+      for (let i = 0; i < data.length; i++) sum += data[i];
+      const avg = sum / data.length;
+      const el = document.getElementById('speaking-' + odString);
+      if (el) {
+        if (avg > 8) el.classList.remove('hidden');
+        else el.classList.add('hidden');
+      }
+      requestAnimationFrame(check);
+    }
+    check();
+  } catch (e) {
+    console.log('Remote audio monitor error:', e);
+  }
 }
 
 // ============ DEVICE ENUMERATION ============
 async function enumerateDevices() {
   try {
     const devices = await navigator.mediaDevices.enumerateDevices();
-
     micSelect.innerHTML = '';
     speakerSelect.innerHTML = '';
     camSelect.innerHTML = '';
@@ -124,7 +241,6 @@ async function enumerateDevices() {
       const option = document.createElement('option');
       option.value = device.deviceId;
       option.text = device.label || `${device.kind} (${device.deviceId.slice(0, 8)})`;
-
       if (device.kind === 'audioinput') micSelect.appendChild(option);
       else if (device.kind === 'audiooutput') speakerSelect.appendChild(option);
       else if (device.kind === 'videoinput') camSelect.appendChild(option);
@@ -174,6 +290,82 @@ async function getMedia() {
   }
 }
 
+// ============ PEER CONNECTION ============
+function createPeerConnection(remoteId, isInitiator) {
+  const pc = new RTCPeerConnection(config);
+
+  peers.set(remoteId, { pc, remoteStream: null });
+
+  // Добавляем свои треки
+  localStream.getTracks().forEach((track) => {
+    pc.addTrack(track, localStream);
+  });
+
+  // Получаем удалённые треки
+  pc.ontrack = (event) => {
+    const peerData = peers.get(remoteId);
+    if (peerData && !peerData.remoteStream) {
+      peerData.remoteStream = event.streams[0];
+      const videoEl = createRemoteVideo(remoteId);
+      videoEl.srcObject = event.streams[0];
+
+      const overlay = document.getElementById('overlay-' + remoteId);
+      if (overlay) overlay.classList.add('hidden');
+
+      monitorRemoteAudio(event.streams[0], remoteId);
+      setStatus('✅ Подключено! Участников: ' + peers.size);
+    }
+  };
+
+  pc.onicecandidate = (event) => {
+    if (event.candidate && ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({
+        type: 'candidate',
+        candidate: event.candidate,
+        target: remoteId
+      }));
+    }
+  };
+
+  pc.oniceconnectionstatechange = () => {
+    if (!pc) return;
+    const state = pc.iceConnectionState;
+    if (state === 'failed' || state === 'closed') {
+      console.log(`Peer ${remoteId} ICE: ${state}`);
+    }
+  };
+
+  if (isInitiator) {
+    pc.createOffer()
+      .then((offer) => pc.setLocalDescription(offer))
+      .then(() => {
+        ws.send(JSON.stringify({
+          type: 'offer',
+          sdp: pc.localDescription,
+          target: remoteId
+        }));
+      });
+  }
+
+  return pc;
+}
+
+function removePeer(odString) {
+  const peerData = peers.get(odString);
+  if (peerData) {
+    peerData.pc.close();
+    peers.delete(odString);
+  }
+  removeRemoteVideo(odString);
+  updateSidebarUsers();
+
+  if (peers.size === 0) {
+    setStatus('⏳ Ждём участников...');
+  } else {
+    setStatus('✅ Подключено! Участников: ' + peers.size);
+  }
+}
+
 // ============ WEBSOCKET ============
 function connectWS(room) {
   const proto = location.protocol === 'https:' ? 'wss' : 'ws';
@@ -187,52 +379,74 @@ function connectWS(room) {
     const msg = JSON.parse(e.data);
 
     switch (msg.type) {
-      case 'waiting':
-        setStatus('⏳ Ждём второго участника...');
-        connectionQuality.textContent = 'Ожидание...';
+      // Мы зашли в комнату, получили свой id и список кто уже есть
+      case 'joined':
+        myId = msg.odString;
+        setStatus(msg.users.length === 0
+          ? '⏳ Ждём участников...'
+          : '🔗 Соединяемся...'
+        );
+        connectionQuality.textContent = msg.users.length === 0 ? 'Ожидание...' : 'Соединение...';
+
+        // Создаём соединение с каждым существующим участником (мы инициаторы)
+        msg.users.forEach((userId) => {
+          createPeerConnection(userId, true);
+        });
         break;
 
-      case 'full':
-        statusText.textContent = '❌ Комната заполнена';
-        ws.close();
-        return;
-
-      case 'ready':
-        setStatus('🔗 Соединяемся...');
-        if (msg.initiator) createPeer(true);
+      // Новый участник зашёл — он сам пришлёт нам offer, мы просто ждём
+      case 'user-joined':
+        setStatus('🔗 Новый участник подключается...');
         break;
 
+      // Получили offer от кого-то
       case 'offer':
-        if (!pc) createPeer(false);
-        await pc.setRemoteDescription(new RTCSessionDescription(msg.sdp));
-        const answer = await pc.createAnswer();
-        await pc.setLocalDescription(answer);
-        ws.send(JSON.stringify({ type: 'answer', sdp: answer }));
+        {
+          const pc = createPeerConnection(msg.from, false);
+          await pc.setRemoteDescription(new RTCSessionDescription(msg.sdp));
+          const answer = await pc.createAnswer();
+          await pc.setLocalDescription(answer);
+          ws.send(JSON.stringify({
+            type: 'answer',
+            sdp: answer,
+            target: msg.from
+          }));
+        }
         break;
 
+      // Получили answer
       case 'answer':
-        await pc.setRemoteDescription(new RTCSessionDescription(msg.sdp));
-        break;
-
-      case 'candidate':
-        if (pc) {
-          try {
-            await pc.addIceCandidate(new RTCIceCandidate(msg.candidate));
-          } catch (err) {
-            console.log('ICE error:', err);
+        {
+          const peerData = peers.get(msg.from);
+          if (peerData) {
+            await peerData.pc.setRemoteDescription(new RTCSessionDescription(msg.sdp));
           }
         }
         break;
 
-      case 'peer-left':
-        setStatus('😔 Собеседник отключился');
-        connectionQuality.textContent = 'Отключён';
-        connectionQuality.style.color = '';
-        remoteVideo.srcObject = null;
-        remoteOverlay.classList.remove('hidden');
-        remoteSpeaking.classList.add('hidden');
-        userRemote.classList.add('hidden');
-        if (pc) { pc.close(); pc = null; }
+      // ICE candidate
+      case 'candidate':
+        {
+          const peerData = peers.get(msg.from);
+          if (peerData) {
+            try {
+              await peerData.pc.addIceCandidate(new RTCIceCandidate(msg.candidate));
+            } catch (err) {
+              console.log('ICE error:', err);
+            }
+          }
+        }
+        break;
+
+      // Кто-то ушёл
+      case 'user-left':
+        removePeer(msg.odString);
+        break;
+
+      // Комната полная
+      case 'full':
+        statusText.textContent = '❌ Комната заполнена (макс. ' + 8 + ')';
+        ws.close();
         break;
     }
   };
@@ -241,87 +455,6 @@ function connectWS(room) {
   ws.onerror = () => {
     statusText.textContent = '❌ Ошибка подключения';
   };
-}
-
-// ============ WEBRTC ============
-async function createPeer(isInitiator) {
-  pc = new RTCPeerConnection(config);
-
-  // Добавляем ОРИГИНАЛЬНЫЕ треки — без обработки
-  localStream.getTracks().forEach((track) => {
-    pc.addTrack(track, localStream);
-  });
-
-  pc.ontrack = (event) => {
-    if (remoteVideo.srcObject !== event.streams[0]) {
-      remoteVideo.srcObject = event.streams[0];
-      remoteOverlay.classList.add('hidden');
-      userRemote.classList.remove('hidden');
-      setStatus('✅ Подключено!');
-      connectionQuality.textContent = 'Подключено';
-      connectionQuality.style.color = '#23a559';
-
-      monitorRemoteAudio(event.streams[0]);
-    }
-  };
-
-  pc.onicecandidate = (event) => {
-    if (event.candidate && ws.readyState === WebSocket.OPEN) {
-      ws.send(JSON.stringify({ type: 'candidate', candidate: event.candidate }));
-    }
-  };
-
-  pc.oniceconnectionstatechange = () => {
-    if (!pc) return;
-    const state = pc.iceConnectionState;
-    if (state === 'connected' || state === 'completed') {
-      setStatus('✅ Подключено!');
-      connectionQuality.textContent = 'Подключено';
-      connectionQuality.style.color = '#23a559';
-    } else if (state === 'disconnected') {
-      setStatus('⚠️ Соединение прервано...');
-      connectionQuality.textContent = 'Прервано';
-      connectionQuality.style.color = '#fee75c';
-    } else if (state === 'failed') {
-      setStatus('❌ Не удалось соединиться');
-      connectionQuality.textContent = 'Ошибка';
-      connectionQuality.style.color = '#ed4245';
-    }
-  };
-
-  if (isInitiator) {
-    const offer = await pc.createOffer();
-    await pc.setLocalDescription(offer);
-    ws.send(JSON.stringify({ type: 'offer', sdp: offer }));
-  }
-}
-
-function monitorRemoteAudio(stream) {
-  try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    const source = ctx.createMediaStreamSource(stream);
-    const remoteAnalyser = ctx.createAnalyser();
-    remoteAnalyser.fftSize = 256;
-    source.connect(remoteAnalyser);
-    // НЕ подключаем к destination
-
-    const data = new Uint8Array(remoteAnalyser.frequencyBinCount);
-    function check() {
-      remoteAnalyser.getByteFrequencyData(data);
-      let sum = 0;
-      for (let i = 0; i < data.length; i++) sum += data[i];
-      const avg = sum / data.length;
-      if (avg > 8) {
-        remoteSpeaking.classList.remove('hidden');
-      } else {
-        remoteSpeaking.classList.add('hidden');
-      }
-      requestAnimationFrame(check);
-    }
-    check();
-  } catch (e) {
-    console.log('Remote audio monitor error:', e);
-  }
 }
 
 // ============ JOIN ROOM ============
@@ -399,21 +532,23 @@ toggleCamBtns.forEach((btn) => {
 toggleScreenBtns.forEach((btn) => {
   if (!btn) return;
   btn.addEventListener('click', async () => {
-    if (!pc) return;
+    if (peers.size === 0) return;
 
     if (!screenOn) {
       try {
         screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
         const screenTrack = screenStream.getVideoTracks()[0];
-        const sender = pc.getSenders().find((s) => s.track && s.track.kind === 'video');
-        if (sender) sender.replaceTrack(screenTrack);
+
+        // Заменяем видео-трек у всех пиров
+        peers.forEach((peerData) => {
+          const sender = peerData.pc.getSenders().find((s) => s.track && s.track.kind === 'video');
+          if (sender) sender.replaceTrack(screenTrack);
+        });
+
         localVideo.srcObject = screenStream;
         screenOn = true;
 
-        screenTrack.onended = () => {
-          stopScreenShare();
-        };
-
+        screenTrack.onended = () => stopScreenShare();
         toggleScreenBtns.forEach((b) => { if (b) b.classList.add('active'); });
       } catch (e) {
         console.log('Screen share cancelled');
@@ -430,9 +565,11 @@ function stopScreenShare() {
     screenStream = null;
   }
   const videoTrack = localStream.getVideoTracks()[0];
-  if (videoTrack && pc) {
-    const sender = pc.getSenders().find((s) => s.track && s.track.kind === 'video');
-    if (sender) sender.replaceTrack(videoTrack);
+  if (videoTrack) {
+    peers.forEach((peerData) => {
+      const sender = peerData.pc.getSenders().find((s) => s.track && s.track.kind === 'video');
+      if (sender) sender.replaceTrack(videoTrack);
+    });
   }
   localVideo.srcObject = localStream;
   screenOn = false;
@@ -446,20 +583,25 @@ toggleNoiseBtn.addEventListener('click', () => {
   noiseToggle.checked = noiseOn;
 });
 
-// Volume slider (output volume)
+// Volume slider
 volumeSlider.addEventListener('input', () => {
-  if (remoteVideo) {
-    remoteVideo.volume = volumeSlider.value / 100;
-  }
+  const vol = volumeSlider.value / 100;
+  // Применяем ко всем удалённым видео
+  document.querySelectorAll('.remote-video-box video').forEach((v) => {
+    v.volume = vol;
+  });
+  if (remoteVideo) remoteVideo.volume = vol;
 });
 
 // PiP
 togglePip.addEventListener('click', async () => {
   try {
+    // Находим первое удалённое видео
+    const rv = document.querySelector('.remote-video-box video') || remoteVideo;
     if (document.pictureInPictureElement) {
       await document.exitPictureInPicture();
-    } else {
-      await remoteVideo.requestPictureInPicture();
+    } else if (rv) {
+      await rv.requestPictureInPicture();
     }
   } catch (e) {
     console.log('PiP not supported');
@@ -468,11 +610,10 @@ togglePip.addEventListener('click', async () => {
 
 // Fullscreen
 toggleFullscreen.addEventListener('click', () => {
-  const container = document.getElementById('remote-container');
   if (document.fullscreenElement) {
     document.exitFullscreen();
   } else {
-    container.requestFullscreen().catch(() => {});
+    videosContainer.requestFullscreen().catch(() => {});
   }
 });
 
@@ -490,14 +631,11 @@ document.querySelector('.modal-backdrop')?.addEventListener('click', () => {
   settingsModal.classList.add('hidden');
 });
 
-// Mic volume slider — этот ползунок НЕ ломает стрим,
-// он применяет gain через applyConstraints (если поддерживается)
-// или просто показывает значение
 micVolume.addEventListener('input', () => {
   micVolumeLabel.textContent = micVolume.value + '%';
 });
 
-// Device change — микрофон
+// Device change — mic
 micSelect.addEventListener('change', async () => {
   if (!localStream) return;
   try {
@@ -512,28 +650,24 @@ micSelect.addEventListener('change', async () => {
     const newTrack = newStream.getAudioTracks()[0];
     const oldTrack = localStream.getAudioTracks()[0];
 
-    // Заменяем в PeerConnection
-    if (pc) {
-      const sender = pc.getSenders().find((s) => s.track && s.track.kind === 'audio');
-      if (sender) await sender.replaceTrack(newTrack);
-    }
+    // Заменяем у всех пиров
+    peers.forEach((peerData) => {
+      const sender = peerData.pc.getSenders().find((s) => s.track && s.track.kind === 'audio');
+      if (sender) sender.replaceTrack(newTrack);
+    });
 
-    // Заменяем в локальном стриме
     localStream.removeTrack(oldTrack);
     oldTrack.stop();
     localStream.addTrack(newTrack);
 
-    // Обновляем мониторинг
-    if (monitorCtx) {
-      monitorCtx.close();
-    }
+    if (monitorCtx) monitorCtx.close();
     setupAudioMonitor(localStream);
   } catch (e) {
     console.log('Mic switch error:', e);
   }
 });
 
-// Device change — камера
+// Device change — cam
 camSelect.addEventListener('change', async () => {
   if (!localStream) return;
   try {
@@ -543,10 +677,10 @@ camSelect.addEventListener('change', async () => {
     const newTrack = newStream.getVideoTracks()[0];
     const oldTrack = localStream.getVideoTracks()[0];
 
-    if (pc) {
-      const sender = pc.getSenders().find((s) => s.track && s.track.kind === 'video');
-      if (sender) await sender.replaceTrack(newTrack);
-    }
+    peers.forEach((peerData) => {
+      const sender = peerData.pc.getSenders().find((s) => s.track && s.track.kind === 'video');
+      if (sender) sender.replaceTrack(newTrack);
+    });
 
     if (oldTrack) {
       localStream.removeTrack(oldTrack);
@@ -559,16 +693,25 @@ camSelect.addEventListener('change', async () => {
   }
 });
 
-// Device change — динамик
+// Device change — speaker
 speakerSelect.addEventListener('change', () => {
-  if (remoteVideo.setSinkId) {
+  if (remoteVideo && remoteVideo.setSinkId) {
     remoteVideo.setSinkId(speakerSelect.value).catch(() => {});
   }
+  document.querySelectorAll('.remote-video-box video').forEach((v) => {
+    if (v.setSinkId) v.setSinkId(speakerSelect.value).catch(() => {});
+  });
 });
 
 // Hang up
 hangUp.addEventListener('click', () => {
-  if (pc) { pc.close(); pc = null; }
+  // Закрываем все соединения
+  peers.forEach((peerData, odString) => {
+    peerData.pc.close();
+    removeRemoteVideo(odString);
+  });
+  peers.clear();
+
   if (ws) ws.close();
   if (localStream) localStream.getTracks().forEach((t) => t.stop());
   if (screenStream) screenStream.getTracks().forEach((t) => t.stop());
@@ -584,6 +727,7 @@ hangUp.addEventListener('click', () => {
   micOn = true;
   camOn = true;
   screenOn = false;
+  myId = null;
   updateMicUI();
   updateCamUI();
   userRemote.classList.add('hidden');
