@@ -10,17 +10,20 @@ const wss = new WebSocket.Server({ server });
 app.use(express.static(path.join(__dirname, 'public')));
 
 const MAX_USERS = 8;
-
-// rooms: roomId -> Map<odString, ws>
 const rooms = new Map();
-
 let idCounter = 0;
+
+function heartbeat() {
+  this.isAlive = true;
+}
 
 wss.on('connection', (ws) => {
   const odString = String(++idCounter);
   let currentRoom = null;
 
   ws.odString = odString;
+  ws.isAlive = true;
+  ws.on('pong', heartbeat);
 
   ws.on('message', (data) => {
     let msg;
@@ -30,7 +33,6 @@ wss.on('connection', (ws) => {
       return;
     }
 
-    // Вход в комнату
     if (msg.type === 'join') {
       currentRoom = msg.room;
 
@@ -46,25 +48,21 @@ wss.on('connection', (ws) => {
         return;
       }
 
-      // Сообщаем новому участнику список всех кто уже в комнате
       const existingUsers = [];
-      room.forEach((peer, odString) => {
-        existingUsers.push(odString);
+      room.forEach((peer, odStr) => {
+        existingUsers.push(odStr);
       });
 
-      // Добавляем нового
       room.set(odString, ws);
 
-      // Отправляем новому его id и список существующих
       ws.send(JSON.stringify({
         type: 'joined',
         odString: odString,
         users: existingUsers
       }));
 
-      // Сообщаем всем остальным что зашёл новый
-      room.forEach((peer, peerodString) => {
-        if (peerodString !== odString && peer.readyState === WebSocket.OPEN) {
+      room.forEach((peer, peerOd) => {
+        if (peerOd !== odString && peer.readyState === WebSocket.OPEN) {
           peer.send(JSON.stringify({
             type: 'user-joined',
             odString: odString
@@ -75,7 +73,6 @@ wss.on('connection', (ws) => {
       return;
     }
 
-    // Пересылка сигналов конкретному пиру
     if (msg.type === 'offer' || msg.type === 'answer' || msg.type === 'candidate') {
       if (currentRoom && rooms.has(currentRoom)) {
         const room = rooms.get(currentRoom);
@@ -98,7 +95,6 @@ wss.on('connection', (ws) => {
       const room = rooms.get(currentRoom);
       room.delete(odString);
 
-      // Сообщаем всем что участник ушёл
       room.forEach((peer) => {
         if (peer.readyState === WebSocket.OPEN) {
           peer.send(JSON.stringify({
@@ -115,7 +111,20 @@ wss.on('connection', (ws) => {
   });
 });
 
+// Пинг каждые 25 секунд чтобы соединение не умирало
+const interval = setInterval(() => {
+  wss.clients.forEach((ws) => {
+    if (ws.isAlive === false) return ws.terminate();
+    ws.isAlive = false;
+    ws.ping();
+  });
+}, 25000);
+
+wss.on('close', () => {
+  clearInterval(interval);
+});
+
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log('Server running on port ' + PORT);
 });
