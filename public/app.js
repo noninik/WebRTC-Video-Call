@@ -166,13 +166,33 @@ function updateMicUI(){toggleMicBtns.forEach(b=>{if(!b)return;b.classList.toggle
 function updateCamUI(){toggleCamBtns.forEach(b=>{if(!b)return;b.classList.toggle('muted',!camOn);b.querySelector('i').className=camOn?'fas fa-video':'fas fa-video-slash';});indicatorCam.className=camOn?'fas fa-video':'fas fa-video-slash';indicatorCam.style.color=camOn?'':'#ff3b3b';localOverlay.classList.toggle('hidden',camOn);}
 
 // ===== CHAT =====
-function handleChat(msg){
+function handleChat(msg) {
   soundMsg();
-  const div=document.createElement('div');div.className='chat-msg '+(msg.self?'self':'other');
-  const time=new Date(msg.time).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
-  div.innerHTML=(msg.self?'':'<div class="msg-sender">'+escHtml(msg.nickname)+'</div>')+'<div>'+escHtml(msg.text)+'</div><div class="msg-time">'+time+'</div>';
-  chatMessages.appendChild(div);chatMessages.scrollTop=chatMessages.scrollHeight;
-  if(!chatOpen&&!msg.self){unreadCount++;showBadge();}
+  const div = document.createElement('div');
+
+  // Check if message is only emojis (1-3 emoji, no other text)
+  const emojiRegex = /^[\p{Emoji}\u200d\ufe0f]{1,10}$/u;
+  const isEmojiOnly = !msg.gif && msg.text && emojiRegex.test(msg.text.trim());
+
+  div.className = 'chat-msg ' + (msg.self ? 'self' : 'other') + (isEmojiOnly ? ' emoji-only' : '');
+  const time = new Date(msg.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+  let content = '';
+  if (!msg.self) content += '<div class="msg-sender">' + escHtml(msg.nickname) + '</div>';
+
+  if (msg.gif) {
+    content += '<img class="chat-gif" src="' + escHtml(msg.gif) + '" alt="GIF" loading="lazy" />';
+  } else if (msg.text) {
+    content += '<div>' + escHtml(msg.text) + '</div>';
+  }
+
+  content += '<div class="msg-time">' + time + '</div>';
+  div.innerHTML = content;
+
+  chatMessages.appendChild(div);
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+
+  if (!chatOpen && !msg.self) { unreadCount++; showBadge(); }
   typingIndicator.classList.add('hidden');
 }
 function addSystemMsg(text){const d=document.createElement('div');d.className='chat-system';d.textContent=text;chatMessages.appendChild(d);chatMessages.scrollTop=chatMessages.scrollHeight;}
