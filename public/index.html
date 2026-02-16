@@ -133,11 +133,36 @@
       </div>
       <div id="chat-messages"></div>
       <div id="typing-indicator" class="hidden"><span id="typing-text">Someone is typing...</span></div>
+            <div id="emoji-picker" class="hidden">
+        <div id="emoji-search-box">
+          <input type="text" id="emoji-search" placeholder="Search emoji..." />
+        </div>
+        <div id="emoji-categories">
+          <button class="emoji-cat-btn active" data-cat="frequent">⭐</button>
+          <button class="emoji-cat-btn" data-cat="smileys">😀</button>
+          <button class="emoji-cat-btn" data-cat="people">👋</button>
+          <button class="emoji-cat-btn" data-cat="animals">🐱</button>
+          <button class="emoji-cat-btn" data-cat="food">🍕</button>
+          <button class="emoji-cat-btn" data-cat="objects">💡</button>
+          <button class="emoji-cat-btn" data-cat="symbols">❤️</button>
+        </div>
+        <div id="emoji-list"></div>
+      </div>
+
+      <div id="gif-picker" class="hidden">
+        <div id="gif-search-box">
+          <input type="text" id="gif-search" placeholder="Search GIFs..." />
+        </div>
+        <div id="gif-results"></div>
+        <div id="gif-powered">Powered by Tenor</div>
+      </div>
+
       <div id="chat-input-area">
+        <button id="emoji-btn" class="chat-extra-btn" title="Emoji"><i class="fas fa-face-smile"></i></button>
+        <button id="gif-btn" class="chat-extra-btn" title="GIF">GIF</button>
         <input type="text" id="chat-input" placeholder="Message..." autocomplete="off" spellcheck="false" maxlength="2000" />
         <button id="chat-send"><i class="fas fa-paper-plane"></i></button>
       </div>
-    </div>
 
     <!-- Settings Modal -->
     <div id="settings-modal" class="modal hidden">
