@@ -13,33 +13,26 @@ const MAX_USERS = 8;
 const rooms = new Map();
 let idCounter = 0;
 
-function heartbeat() {
-  this.isAlive = true;
-}
+function heartbeat() { this.isAlive = true; }
 
 wss.on('connection', (ws) => {
-  const odString = String(++idCounter);
+  const odStr = String(++idCounter);
   let currentRoom = null;
+  let nickname = 'User ' + odStr;
 
-  ws.odString = odString;
+  ws.odStr = odStr;
   ws.isAlive = true;
   ws.on('pong', heartbeat);
 
   ws.on('message', (data) => {
     let msg;
-    try {
-      msg = JSON.parse(data);
-    } catch {
-      return;
-    }
+    try { msg = JSON.parse(data); } catch { return; }
 
     if (msg.type === 'join') {
       currentRoom = msg.room;
+      nickname = (msg.nickname || '').trim().slice(0, 20) || 'User ' + odStr;
 
-      if (!rooms.has(currentRoom)) {
-        rooms.set(currentRoom, new Map());
-      }
-
+      if (!rooms.has(currentRoom)) rooms.set(currentRoom, new Map());
       const room = rooms.get(currentRoom);
 
       if (room.size >= MAX_USERS) {
@@ -49,27 +42,29 @@ wss.on('connection', (ws) => {
       }
 
       const existingUsers = [];
-      room.forEach((peer, odStr) => {
-        existingUsers.push(odStr);
+      room.forEach((peer, peerId) => {
+        existingUsers.push({ odStr: peerId, nickname: peer.nickname });
       });
 
-      room.set(odString, ws);
+      ws.nickname = nickname;
+      room.set(odStr, ws);
 
       ws.send(JSON.stringify({
         type: 'joined',
-        odString: odString,
+        odStr: odStr,
+        nickname: nickname,
         users: existingUsers
       }));
 
-      room.forEach((peer, peerOd) => {
-        if (peerOd !== odString && peer.readyState === WebSocket.OPEN) {
+      room.forEach((peer, peerId) => {
+        if (peerId !== odStr && peer.readyState === WebSocket.OPEN) {
           peer.send(JSON.stringify({
             type: 'user-joined',
-            odString: odString
+            odStr: odStr,
+            nickname: nickname
           }));
         }
       });
-
       return;
     }
 
@@ -82,9 +77,62 @@ wss.on('connection', (ws) => {
             type: msg.type,
             sdp: msg.sdp,
             candidate: msg.candidate,
-            from: odString
+            from: odStr
           }));
         }
+      }
+      return;
+    }
+
+    if (msg.type === 'chat') {
+      if (currentRoom && rooms.has(currentRoom)) {
+        const room = rooms.get(currentRoom);
+        const time = Date.now();
+        room.forEach((peer, peerId) => {
+          if (peer.readyState === WebSocket.OPEN) {
+            peer.send(JSON.stringify({
+              type: 'chat',
+              from: odStr,
+              nickname: nickname,
+              text: (msg.text || '').slice(0, 2000),
+              time: time,
+              self: peerId === odStr
+            }));
+          }
+        });
+      }
+      return;
+    }
+
+    if (msg.type === 'reaction') {
+      if (currentRoom && rooms.has(currentRoom)) {
+        const room = rooms.get(currentRoom);
+        room.forEach((peer, peerId) => {
+          if (peer.readyState === WebSocket.OPEN) {
+            peer.send(JSON.stringify({
+              type: 'reaction',
+              from: odStr,
+              nickname: nickname,
+              emoji: (msg.emoji || '').slice(0, 4)
+            }));
+          }
+        });
+      }
+      return;
+    }
+
+    if (msg.type === 'typing') {
+      if (currentRoom && rooms.has(currentRoom)) {
+        const room = rooms.get(currentRoom);
+        room.forEach((peer, peerId) => {
+          if (peerId !== odStr && peer.readyState === WebSocket.OPEN) {
+            peer.send(JSON.stringify({
+              type: 'typing',
+              from: odStr,
+              nickname: nickname
+            }));
+          }
+        });
       }
       return;
     }
@@ -93,25 +141,23 @@ wss.on('connection', (ws) => {
   ws.on('close', () => {
     if (currentRoom && rooms.has(currentRoom)) {
       const room = rooms.get(currentRoom);
-      room.delete(odString);
+      room.delete(odStr);
 
       room.forEach((peer) => {
         if (peer.readyState === WebSocket.OPEN) {
           peer.send(JSON.stringify({
             type: 'user-left',
-            odString: odString
+            odStr: odStr,
+            nickname: nickname
           }));
         }
       });
 
-      if (room.size === 0) {
-        rooms.delete(currentRoom);
-      }
+      if (room.size === 0) rooms.delete(currentRoom);
     }
   });
 });
 
-// Пинг каждые 25 секунд чтобы соединение не умирало
 const interval = setInterval(() => {
   wss.clients.forEach((ws) => {
     if (ws.isAlive === false) return ws.terminate();
@@ -120,11 +166,7 @@ const interval = setInterval(() => {
   });
 }, 25000);
 
-wss.on('close', () => {
-  clearInterval(interval);
-});
+wss.on('close', () => clearInterval(interval));
 
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-  console.log('Server running on port ' + PORT);
-});
+server.listen(PORT, () => console.log('Server on port ' + PORT));
