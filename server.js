@@ -95,6 +95,7 @@ wss.on('connection', (ws) => {
               from: odStr,
               nickname: nickname,
               text: (msg.text || '').slice(0, 2000),
+              gif: msg.gif || null,
               time: time,
               self: peerId === odStr
             }));
