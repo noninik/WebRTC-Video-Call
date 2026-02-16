@@ -48,7 +48,7 @@ const toggleFullscreen = document.getElementById('toggle-fullscreen');
 // ============ STATE ============
 let ws, pc, localStream, screenStream;
 let micOn = true, camOn = true, screenOn = false, noiseOn = true;
-let audioContext, gainNode, analyser, micSource;
+let monitorCtx, analyser;
 let animFrameId;
 
 const config = {
@@ -70,38 +70,19 @@ function setStatus(text) {
   callStatus.textContent = text;
 }
 
-// ============ AUDIO PROCESSING ============
-function setupAudioProcessing(stream) {
-  audioContext = new (window.AudioContext || window.webkitAudioContext)();
-  micSource = audioContext.createMediaStreamSource(stream);
-
-  // Gain node for mic volume
-  gainNode = audioContext.createGain();
-  gainNode.gain.value = micVolume.value / 100;
-
-  // Analyser for mic level visualization
-  analyser = audioContext.createAnalyser();
-  analyser.fftSize = 256;
-
-  micSource.connect(gainNode);
-  gainNode.connect(analyser);
-
-  // Create processed stream
-  const dest = audioContext.createMediaStreamDestination();
-  gainNode.connect(dest);
-
-  // Replace audio track in local stream
-  const processedTrack = dest.stream.getAudioTracks()[0];
-  const oldTrack = stream.getAudioTracks()[0];
-
-  // Keep reference to original track for muting
-  processedTrack._originalTrack = oldTrack;
-
-  stream.removeTrack(oldTrack);
-  stream.addTrack(processedTrack);
-
-  // Start level monitoring
-  monitorMicLevel();
+// ============ AUDIO MONITORING (only for visualization, does NOT touch the stream) ============
+function setupAudioMonitor(stream) {
+  try {
+    monitorCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const source = monitorCtx.createMediaStreamSource(stream);
+    analyser = monitorCtx.createAnalyser();
+    analyser.fftSize = 256;
+    source.connect(analyser);
+    // НЕ подключаем к destination — только слушаем уровень
+    monitorMicLevel();
+  } catch (e) {
+    console.log('Audio monitor error:', e);
+  }
 }
 
 function monitorMicLevel() {
@@ -119,7 +100,7 @@ function monitorMicLevel() {
     micLevel.style.width = pct + '%';
 
     // Speaking indicator
-    if (pct > 10) {
+    if (pct > 10 && micOn) {
       localSpeaking.classList.remove('hidden');
     } else {
       localSpeaking.classList.add('hidden');
@@ -149,7 +130,6 @@ async function enumerateDevices() {
       else if (device.kind === 'videoinput') camSelect.appendChild(option);
     });
 
-    // If no output devices listed
     if (speakerSelect.options.length === 0) {
       const opt = document.createElement('option');
       opt.text = 'Стандартный';
@@ -174,7 +154,7 @@ async function getMedia() {
   try {
     localStream = await navigator.mediaDevices.getUserMedia(constraints);
     localVideo.srcObject = localStream;
-    setupAudioProcessing(localStream);
+    setupAudioMonitor(localStream);
     await enumerateDevices();
     return true;
   } catch (err) {
@@ -184,7 +164,7 @@ async function getMedia() {
       camOn = false;
       updateCamUI();
       localOverlay.classList.remove('hidden');
-      setupAudioProcessing(localStream);
+      setupAudioMonitor(localStream);
       await enumerateDevices();
       return true;
     } catch (err2) {
@@ -247,6 +227,7 @@ function connectWS(room) {
       case 'peer-left':
         setStatus('😔 Собеседник отключился');
         connectionQuality.textContent = 'Отключён';
+        connectionQuality.style.color = '';
         remoteVideo.srcObject = null;
         remoteOverlay.classList.remove('hidden');
         remoteSpeaking.classList.add('hidden');
@@ -266,6 +247,7 @@ function connectWS(room) {
 async function createPeer(isInitiator) {
   pc = new RTCPeerConnection(config);
 
+  // Добавляем ОРИГИНАЛЬНЫЕ треки — без обработки
   localStream.getTracks().forEach((track) => {
     pc.addTrack(track, localStream);
   });
@@ -279,7 +261,6 @@ async function createPeer(isInitiator) {
       connectionQuality.textContent = 'Подключено';
       connectionQuality.style.color = '#23a559';
 
-      // Monitor remote audio for speaking indicator
       monitorRemoteAudio(event.streams[0]);
     }
   };
@@ -291,6 +272,7 @@ async function createPeer(isInitiator) {
   };
 
   pc.oniceconnectionstatechange = () => {
+    if (!pc) return;
     const state = pc.iceConnectionState;
     if (state === 'connected' || state === 'completed') {
       setStatus('✅ Подключено!');
@@ -321,6 +303,7 @@ function monitorRemoteAudio(stream) {
     const remoteAnalyser = ctx.createAnalyser();
     remoteAnalyser.fftSize = 256;
     source.connect(remoteAnalyser);
+    // НЕ подключаем к destination
 
     const data = new Uint8Array(remoteAnalyser.frequencyBinCount);
     function check() {
@@ -456,14 +439,14 @@ function stopScreenShare() {
   toggleScreenBtns.forEach((b) => { if (b) b.classList.remove('active'); });
 }
 
-// Noise suppression
+// Noise suppression button
 toggleNoiseBtn.addEventListener('click', () => {
   noiseOn = !noiseOn;
   toggleNoiseBtn.classList.toggle('active', noiseOn);
   noiseToggle.checked = noiseOn;
 });
 
-// Volume slider
+// Volume slider (output volume)
 volumeSlider.addEventListener('input', () => {
   if (remoteVideo) {
     remoteVideo.volume = volumeSlider.value / 100;
@@ -507,14 +490,14 @@ document.querySelector('.modal-backdrop')?.addEventListener('click', () => {
   settingsModal.classList.add('hidden');
 });
 
-// Mic volume
+// Mic volume slider — этот ползунок НЕ ломает стрим,
+// он применяет gain через applyConstraints (если поддерживается)
+// или просто показывает значение
 micVolume.addEventListener('input', () => {
-  const val = micVolume.value;
-  micVolumeLabel.textContent = val + '%';
-  if (gainNode) gainNode.gain.value = val / 100;
+  micVolumeLabel.textContent = micVolume.value + '%';
 });
 
-// Device change
+// Device change — микрофон
 micSelect.addEventListener('change', async () => {
   if (!localStream) return;
   try {
@@ -528,19 +511,29 @@ micSelect.addEventListener('change', async () => {
     });
     const newTrack = newStream.getAudioTracks()[0];
     const oldTrack = localStream.getAudioTracks()[0];
+
+    // Заменяем в PeerConnection
+    if (pc) {
+      const sender = pc.getSenders().find((s) => s.track && s.track.kind === 'audio');
+      if (sender) await sender.replaceTrack(newTrack);
+    }
+
+    // Заменяем в локальном стриме
     localStream.removeTrack(oldTrack);
     oldTrack.stop();
     localStream.addTrack(newTrack);
 
-    if (pc) {
-      const sender = pc.getSenders().find((s) => s.track && s.track.kind === 'audio');
-      if (sender) sender.replaceTrack(newTrack);
+    // Обновляем мониторинг
+    if (monitorCtx) {
+      monitorCtx.close();
     }
+    setupAudioMonitor(localStream);
   } catch (e) {
     console.log('Mic switch error:', e);
   }
 });
 
+// Device change — камера
 camSelect.addEventListener('change', async () => {
   if (!localStream) return;
   try {
@@ -549,22 +542,24 @@ camSelect.addEventListener('change', async () => {
     });
     const newTrack = newStream.getVideoTracks()[0];
     const oldTrack = localStream.getVideoTracks()[0];
+
+    if (pc) {
+      const sender = pc.getSenders().find((s) => s.track && s.track.kind === 'video');
+      if (sender) await sender.replaceTrack(newTrack);
+    }
+
     if (oldTrack) {
       localStream.removeTrack(oldTrack);
       oldTrack.stop();
     }
     localStream.addTrack(newTrack);
     localVideo.srcObject = localStream;
-
-    if (pc) {
-      const sender = pc.getSenders().find((s) => s.track && s.track.kind === 'video');
-      if (sender) sender.replaceTrack(newTrack);
-    }
   } catch (e) {
     console.log('Cam switch error:', e);
   }
 });
 
+// Device change — динамик
 speakerSelect.addEventListener('change', () => {
   if (remoteVideo.setSinkId) {
     remoteVideo.setSinkId(speakerSelect.value).catch(() => {});
@@ -578,7 +573,8 @@ hangUp.addEventListener('click', () => {
   if (localStream) localStream.getTracks().forEach((t) => t.stop());
   if (screenStream) screenStream.getTracks().forEach((t) => t.stop());
   if (animFrameId) cancelAnimationFrame(animFrameId);
-  if (audioContext) audioContext.close();
+  if (monitorCtx) { monitorCtx.close(); monitorCtx = null; }
+  analyser = null;
 
   remoteVideo.srcObject = null;
   localVideo.srcObject = null;
