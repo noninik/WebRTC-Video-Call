@@ -1,7 +1,7 @@
 {
   "name": "webrtc-call",
-  "version": "2.0.0",
-  "description": "WebRTC Video Call",
+  "version": "1.0.0",
+  "description": "Simple WebRTC video call",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
