@@ -1,161 +1,166 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>WebRTC Video Call</title>
-    <link rel="stylesheet" href="styles.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>WebRTC Video Call</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 </head>
 <body>
 
-    <!-- ===== PARTICLES ===== -->
-    <div class="particles" id="particles"></div>
+  <!-- PARTICLES -->
+  <div class="particles" id="particles"></div>
 
-    <!-- ===== LOBBY SCREEN ===== -->
-    <div class="screen lobby-screen active" id="lobbyScreen">
-        <div class="lobby-wrapper">
-
-            <!-- Logo -->
-            <div class="logo-area">
-                <div class="logo-ring">
-                    <div class="logo-ring-pulse"></div>
-                    <div class="logo-ring-pulse delay"></div>
-                    <div class="logo-icon">
-                        <i class="fas fa-video"></i>
-                    </div>
-                </div>
-                <h1 class="logo-title">Video<span>Call</span></h1>
-                <p class="logo-sub">Peer-to-peer • Encrypted • No sign-up</p>
-            </div>
-
-            <!-- Card -->
-            <div class="lobby-card">
-                <div class="card-border-glow"></div>
-
-                <div class="input-box">
-                    <i class="fas fa-hashtag input-pre-icon"></i>
-                    <input
-                        type="text"
-                        id="roomInput"
-                        placeholder="Enter room code"
-                        maxlength="20"
-                        autocomplete="off"
-                        spellcheck="false"
-                    />
-                    <button class="btn-dice" id="btnDice" title="Random code">
-                        <i class="fas fa-dice-d6"></i>
-                    </button>
-                </div>
-
-                <div class="lobby-buttons">
-                    <button class="btn btn-create" id="btnCreate">
-                        <span class="btn-bg"></span>
-                        <i class="fas fa-plus"></i>
-                        <span class="btn-label">Create Room</span>
-                    </button>
-                    <button class="btn btn-join" id="btnJoin">
-                        <span class="btn-bg"></span>
-                        <i class="fas fa-arrow-right-to-bracket"></i>
-                        <span class="btn-label">Join Room</span>
-                    </button>
-                </div>
-
-                <p class="lobby-status" id="lobbyStatus"></p>
-            </div>
-
-            <!-- Features -->
-            <div class="features-row">
-                <div class="feature"><i class="fas fa-shield-halved"></i> E2E Encrypted</div>
-                <div class="feature"><i class="fas fa-bolt"></i> Ultra Low Latency</div>
-                <div class="feature"><i class="fas fa-globe"></i> Works Everywhere</div>
-            </div>
+  <!-- LOBBY SCREEN -->
+  <div class="screen lobby-screen active" id="lobbyScreen">
+    <div class="lobby-wrapper">
+      <div class="logo-area">
+        <div class="logo-ring">
+          <div class="logo-ring-pulse"></div>
+          <div class="logo-ring-pulse delay"></div>
+          <div class="logo-icon">
+            <i class="fas fa-video"></i>
+          </div>
         </div>
+        <h1 class="logo-title">Video<span>Call</span></h1>
+        <p class="logo-sub">Peer-to-peer • Encrypted • No sign-up</p>
+      </div>
+
+      <div class="lobby-card">
+        <div class="card-border-glow"></div>
+
+        <div class="input-box" id="nicknameBox">
+          <i class="fas fa-user input-pre-icon"></i>
+          <input type="text" id="nicknameInput" placeholder="Your nickname" maxlength="20" autocomplete="off" spellcheck="false" />
+        </div>
+
+        <div class="input-box" id="roomBox">
+          <i class="fas fa-hashtag input-pre-icon"></i>
+          <input type="text" id="roomInput" placeholder="Enter room code" maxlength="20" autocomplete="off" spellcheck="false" />
+          <button class="btn-dice" id="btnDice" title="Random code">
+            <i class="fas fa-dice-d6"></i>
+          </button>
+        </div>
+
+        <div class="lobby-buttons">
+          <button class="btn btn-create" id="btnCreate">
+            <span class="btn-bg"></span>
+            <i class="fas fa-plus"></i>
+            <span class="btn-label">Create Room</span>
+          </button>
+          <button class="btn btn-join" id="btnJoin">
+            <span class="btn-bg"></span>
+            <i class="fas fa-arrow-right-to-bracket"></i>
+            <span class="btn-label">Join Room</span>
+          </button>
+        </div>
+
+        <p class="lobby-status" id="lobbyStatus"></p>
+      </div>
+
+      <div class="features-row">
+        <div class="feature"><i class="fas fa-shield-halved"></i> E2E Encrypted</div>
+        <div class="feature"><i class="fas fa-bolt"></i> Ultra Low Latency</div>
+        <div class="feature"><i class="fas fa-globe"></i> Works Everywhere</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CALL SCREEN -->
+  <div class="screen call-screen" id="callScreen">
+    <div class="call-header">
+      <div class="header-left">
+        <span class="status-dot" id="statusDot"></span>
+        <span class="status-label" id="statusLabel">Connecting…</span>
+      </div>
+      <div class="header-center">
+        <span class="timer" id="timer">00:00</span>
+      </div>
+      <div class="header-right">
+        <span class="room-badge" id="roomBadge">
+          <i class="fas fa-hashtag"></i>
+          <span id="roomDisplay"></span>
+        </span>
+        <button class="btn-icon" id="btnCopy" title="Copy room code">
+          <i class="fas fa-copy"></i>
+        </button>
+      </div>
     </div>
 
-    <!-- ===== CALL SCREEN ===== -->
-    <div class="screen call-screen" id="callScreen">
-
-        <!-- Header bar -->
-        <div class="call-header">
-            <div class="header-left">
-                <span class="status-dot" id="statusDot"></span>
-                <span class="status-label" id="statusLabel">Connecting…</span>
-            </div>
-            <div class="header-center">
-                <span class="timer" id="timer">00:00</span>
-            </div>
-            <div class="header-right">
-                <span class="room-badge" id="roomBadge">
-                    <i class="fas fa-hashtag"></i>
-                    <span id="roomDisplay"></span>
-                </span>
-                <button class="btn-icon" id="btnCopy" title="Copy room code">
-                    <i class="fas fa-copy"></i>
-                </button>
-            </div>
+    <div class="videos" id="videos">
+      <div class="video-box remote-box" id="remoteBox">
+        <video id="remoteVideo" autoplay playsinline></video>
+        <div class="placeholder" id="remotePlaceholder">
+          <div class="ph-avatar">
+            <i class="fas fa-user"></i>
+            <div class="ph-wave"></div>
+            <div class="ph-wave delay2"></div>
+          </div>
+          <p>Waiting for peer<span class="dot-anim"></span></p>
         </div>
+        <div class="video-tag" id="remoteTag"><i class="fas fa-user"></i> <span id="remoteNickname">Remote</span></div>
+      </div>
 
-        <!-- Videos -->
-        <div class="videos" id="videos">
-            <!-- Remote (big) -->
-            <div class="video-box remote-box" id="remoteBox">
-                <video id="remoteVideo" autoplay playsinline></video>
-                <div class="placeholder" id="remotePlaceholder">
-                    <div class="ph-avatar">
-                        <i class="fas fa-user"></i>
-                        <div class="ph-wave"></div>
-                        <div class="ph-wave delay2"></div>
-                    </div>
-                    <p>Waiting for peer<span class="dot-anim">...</span></p>
-                </div>
-                <div class="video-tag"><i class="fas fa-user"></i> Remote</div>
-            </div>
-
-            <!-- Local (PiP) -->
-            <div class="video-box local-box" id="localBox">
-                <video id="localVideo" autoplay playsinline muted></video>
-                <div class="placeholder local-ph" id="localPlaceholder">
-                    <div class="ph-avatar small">
-                        <i class="fas fa-user"></i>
-                    </div>
-                </div>
-            </div>
+      <div class="video-box local-box" id="localBox">
+        <video id="localVideo" autoplay playsinline muted></video>
+        <div class="placeholder local-ph" id="localPlaceholder">
+          <div class="ph-avatar small">
+            <i class="fas fa-user"></i>
+          </div>
         </div>
-
-        <!-- Controls -->
-        <div class="controls-bar">
-            <div class="controls-wrap">
-                <button class="ctrl-btn" id="btnMic" title="Mute / Unmute">
-                    <i class="fas fa-microphone"></i>
-                    <span>Mic</span>
-                </button>
-                <button class="ctrl-btn" id="btnCam" title="Camera On / Off">
-                    <i class="fas fa-video"></i>
-                    <span>Camera</span>
-                </button>
-                <button class="ctrl-btn" id="btnFlip" title="Switch Camera">
-                    <i class="fas fa-camera-rotate"></i>
-                    <span>Flip</span>
-                </button>
-                <button class="ctrl-btn" id="btnScreen" title="Share Screen">
-                    <i class="fas fa-desktop"></i>
-                    <span>Screen</span>
-                </button>
-                <button class="ctrl-btn hangup" id="btnHangup" title="End Call">
-                    <i class="fas fa-phone-slash"></i>
-                    <span>End</span>
-                </button>
-            </div>
-        </div>
+        <div class="video-tag local-tag"><i class="fas fa-user"></i> You</div>
+      </div>
     </div>
 
-    <!-- Toasts -->
-    <div class="toast-stack" id="toastStack"></div>
+    <!-- Reaction float container -->
+    <div class="reaction-float" id="reactionFloat"></div>
 
-    <!-- Firebase 9 compat -->
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-    <script src="app.js"></script>
+    <div class="controls-bar">
+      <div class="controls-wrap">
+        <button class="ctrl-btn" id="btnMic" title="Mute / Unmute">
+          <i class="fas fa-microphone"></i>
+          <span>Mic</span>
+        </button>
+        <button class="ctrl-btn" id="btnCam" title="Camera On / Off">
+          <i class="fas fa-video"></i>
+          <span>Camera</span>
+        </button>
+        <button class="ctrl-btn" id="btnFlip" title="Switch Camera">
+          <i class="fas fa-camera-rotate"></i>
+          <span>Flip</span>
+        </button>
+        <button class="ctrl-btn" id="btnScreen" title="Share Screen">
+          <i class="fas fa-desktop"></i>
+          <span>Screen</span>
+        </button>
+        <button class="ctrl-btn" id="btnReaction" title="Send Reaction">
+          <i class="fas fa-face-smile"></i>
+          <span>React</span>
+        </button>
+        <button class="ctrl-btn hangup" id="btnHangup" title="End Call">
+          <i class="fas fa-phone-slash"></i>
+          <span>End</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Reaction picker popup -->
+    <div class="reaction-picker hidden" id="reactionPicker">
+      <button class="reaction-emoji" data-emoji="👍">👍</button>
+      <button class="reaction-emoji" data-emoji="❤️">❤️</button>
+      <button class="reaction-emoji" data-emoji="😂">😂</button>
+      <button class="reaction-emoji" data-emoji="👏">👏</button>
+      <button class="reaction-emoji" data-emoji="🔥">🔥</button>
+      <button class="reaction-emoji" data-emoji="🎉">🎉</button>
+      <button class="reaction-emoji" data-emoji="😮">😮</button>
+      <button class="reaction-emoji" data-emoji="💯">💯</button>
+    </div>
+  </div>
+
+  <!-- Toasts -->
+  <div class="toast-stack" id="toastStack"></div>
+
+  <script src="app.js"></script>
 </body>
 </html>
