@@ -31,38 +31,23 @@ wss.on('connection', (ws) => {
     if (msg.type === 'join') {
       currentRoom = msg.room;
       nickname = (msg.nickname || '').trim().slice(0, 20) || 'User ' + odStr;
-
       if (!rooms.has(currentRoom)) rooms.set(currentRoom, new Map());
       const room = rooms.get(currentRoom);
-
       if (room.size >= MAX_USERS) {
         ws.send(JSON.stringify({ type: 'full' }));
         currentRoom = null;
         return;
       }
-
       const existingUsers = [];
       room.forEach((peer, peerId) => {
         existingUsers.push({ odStr: peerId, nickname: peer.nickname });
       });
-
       ws.nickname = nickname;
       room.set(odStr, ws);
-
-      ws.send(JSON.stringify({
-        type: 'joined',
-        odStr: odStr,
-        nickname: nickname,
-        users: existingUsers
-      }));
-
+      ws.send(JSON.stringify({ type: 'joined', odStr, nickname, users: existingUsers }));
       room.forEach((peer, peerId) => {
         if (peerId !== odStr && peer.readyState === WebSocket.OPEN) {
-          peer.send(JSON.stringify({
-            type: 'user-joined',
-            odStr: odStr,
-            nickname: nickname
-          }));
+          peer.send(JSON.stringify({ type: 'user-joined', odStr, nickname }));
         }
       });
       return;
@@ -70,15 +55,9 @@ wss.on('connection', (ws) => {
 
     if (msg.type === 'offer' || msg.type === 'answer' || msg.type === 'candidate') {
       if (currentRoom && rooms.has(currentRoom)) {
-        const room = rooms.get(currentRoom);
-        const target = room.get(msg.target);
+        const target = rooms.get(currentRoom).get(msg.target);
         if (target && target.readyState === WebSocket.OPEN) {
-          target.send(JSON.stringify({
-            type: msg.type,
-            sdp: msg.sdp,
-            candidate: msg.candidate,
-            from: odStr
-          }));
+          target.send(JSON.stringify({ type: msg.type, sdp: msg.sdp, candidate: msg.candidate, from: odStr }));
         }
       }
       return;
@@ -86,17 +65,14 @@ wss.on('connection', (ws) => {
 
     if (msg.type === 'chat') {
       if (currentRoom && rooms.has(currentRoom)) {
-        const room = rooms.get(currentRoom);
         const time = Date.now();
-        room.forEach((peer, peerId) => {
+        rooms.get(currentRoom).forEach((peer, peerId) => {
           if (peer.readyState === WebSocket.OPEN) {
             peer.send(JSON.stringify({
-              type: 'chat',
-              from: odStr,
-              nickname: nickname,
+              type: 'chat', from: odStr, nickname,
               text: (msg.text || '').slice(0, 2000),
-              time: time,
-              self: peerId === odStr
+              gif: msg.gif || null,
+              time, self: peerId === odStr
             }));
           }
         });
@@ -106,15 +82,9 @@ wss.on('connection', (ws) => {
 
     if (msg.type === 'reaction') {
       if (currentRoom && rooms.has(currentRoom)) {
-        const room = rooms.get(currentRoom);
-        room.forEach((peer, peerId) => {
+        rooms.get(currentRoom).forEach((peer) => {
           if (peer.readyState === WebSocket.OPEN) {
-            peer.send(JSON.stringify({
-              type: 'reaction',
-              from: odStr,
-              nickname: nickname,
-              emoji: (msg.emoji || '').slice(0, 4)
-            }));
+            peer.send(JSON.stringify({ type: 'reaction', from: odStr, nickname, emoji: (msg.emoji || '').slice(0, 4) }));
           }
         });
       }
@@ -123,14 +93,9 @@ wss.on('connection', (ws) => {
 
     if (msg.type === 'typing') {
       if (currentRoom && rooms.has(currentRoom)) {
-        const room = rooms.get(currentRoom);
-        room.forEach((peer, peerId) => {
+        rooms.get(currentRoom).forEach((peer, peerId) => {
           if (peerId !== odStr && peer.readyState === WebSocket.OPEN) {
-            peer.send(JSON.stringify({
-              type: 'typing',
-              from: odStr,
-              nickname: nickname
-            }));
+            peer.send(JSON.stringify({ type: 'typing', from: odStr, nickname }));
           }
         });
       }
@@ -142,31 +107,23 @@ wss.on('connection', (ws) => {
     if (currentRoom && rooms.has(currentRoom)) {
       const room = rooms.get(currentRoom);
       room.delete(odStr);
-
       room.forEach((peer) => {
         if (peer.readyState === WebSocket.OPEN) {
-          peer.send(JSON.stringify({
-            type: 'user-left',
-            odStr: odStr,
-            nickname: nickname
-          }));
+          peer.send(JSON.stringify({ type: 'user-left', odStr, nickname }));
         }
       });
-
       if (room.size === 0) rooms.delete(currentRoom);
     }
   });
 });
 
-const interval = setInterval(() => {
+setInterval(() => {
   wss.clients.forEach((ws) => {
     if (ws.isAlive === false) return ws.terminate();
     ws.isAlive = false;
     ws.ping();
   });
 }, 25000);
-
-wss.on('close', () => clearInterval(interval));
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => console.log('Server on port ' + PORT));
