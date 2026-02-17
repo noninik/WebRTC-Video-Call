@@ -2,156 +2,158 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>WebRTC Video Call</title>
     <link rel="stylesheet" href="styles.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 </head>
 <body>
-    <div class="app-container">
-        <!-- Particles background -->
-        <div class="particles" id="particles"></div>
 
-        <!-- Landing / Lobby -->
-        <div class="screen active" id="lobby-screen">
-            <div class="lobby-container">
-                <div class="logo-section">
+    <!-- ===== PARTICLES ===== -->
+    <div class="particles" id="particles"></div>
+
+    <!-- ===== LOBBY SCREEN ===== -->
+    <div class="screen lobby-screen active" id="lobbyScreen">
+        <div class="lobby-wrapper">
+
+            <!-- Logo -->
+            <div class="logo-area">
+                <div class="logo-ring">
+                    <div class="logo-ring-pulse"></div>
+                    <div class="logo-ring-pulse delay"></div>
                     <div class="logo-icon">
                         <i class="fas fa-video"></i>
-                        <div class="logo-pulse"></div>
-                    </div>
-                    <h1 class="app-title">WebRTC Call</h1>
-                    <p class="app-subtitle">Secure peer-to-peer video calls</p>
-                </div>
-
-                <div class="lobby-card">
-                    <div class="card-glow"></div>
-                    
-                    <div class="input-group">
-                        <div class="input-wrapper">
-                            <i class="fas fa-hashtag input-icon"></i>
-                            <input type="text" id="room-id-input" placeholder="Enter Room ID" maxlength="20" autocomplete="off">
-                            <button class="btn-generate" id="btn-generate" title="Generate random ID">
-                                <i class="fas fa-dice"></i>
-                            </button>
-                        </div>
-                    </div>
-
-                    <div class="button-group">
-                        <button class="btn btn-primary" id="btn-create">
-                            <i class="fas fa-plus-circle"></i>
-                            <span>Create Room</span>
-                            <div class="btn-shimmer"></div>
-                        </button>
-                        <button class="btn btn-secondary" id="btn-join">
-                            <i class="fas fa-sign-in-alt"></i>
-                            <span>Join Room</span>
-                            <div class="btn-shimmer"></div>
-                        </button>
-                    </div>
-
-                    <div class="status-message" id="lobby-status"></div>
-                </div>
-
-                <div class="features">
-                    <div class="feature-item">
-                        <i class="fas fa-lock"></i>
-                        <span>End-to-end encrypted</span>
-                    </div>
-                    <div class="feature-item">
-                        <i class="fas fa-bolt"></i>
-                        <span>Low latency</span>
-                    </div>
-                    <div class="feature-item">
-                        <i class="fas fa-server"></i>
-                        <span>No server relay</span>
                     </div>
                 </div>
-            </div>
-        </div>
-
-        <!-- Call Screen -->
-        <div class="screen" id="call-screen">
-            <div class="call-header">
-                <div class="call-info">
-                    <div class="call-status-dot"></div>
-                    <span class="call-status-text" id="call-status-text">Connecting...</span>
-                </div>
-                <div class="call-timer" id="call-timer">00:00</div>
-                <div class="room-info">
-                    <i class="fas fa-hashtag"></i>
-                    <span id="room-id-display"></span>
-                    <button class="btn-copy" id="btn-copy-room" title="Copy Room ID">
-                        <i class="fas fa-copy"></i>
-                    </button>
-                </div>
+                <h1 class="logo-title">Video<span>Call</span></h1>
+                <p class="logo-sub">Peer-to-peer • Encrypted • No sign-up</p>
             </div>
 
-            <div class="videos-container" id="videos-container">
-                <div class="video-wrapper remote-video-wrapper" id="remote-video-wrapper">
-                    <video id="remote-video" autoplay playsinline></video>
-                    <div class="video-placeholder" id="remote-placeholder">
-                        <div class="avatar-circle">
-                            <i class="fas fa-user"></i>
-                        </div>
-                        <p>Waiting for peer...</p>
-                        <div class="connecting-dots">
-                            <span></span><span></span><span></span>
-                        </div>
-                    </div>
-                    <div class="video-label">
-                        <i class="fas fa-user"></i>
-                        <span>Remote</span>
-                    </div>
+            <!-- Card -->
+            <div class="lobby-card">
+                <div class="card-border-glow"></div>
+
+                <div class="input-box">
+                    <i class="fas fa-hashtag input-pre-icon"></i>
+                    <input
+                        type="text"
+                        id="roomInput"
+                        placeholder="Enter room code"
+                        maxlength="20"
+                        autocomplete="off"
+                        spellcheck="false"
+                    />
+                    <button class="btn-dice" id="btnDice" title="Random code">
+                        <i class="fas fa-dice-d6"></i>
+                    </button>
                 </div>
 
-                <div class="video-wrapper local-video-wrapper" id="local-video-wrapper">
-                    <video id="local-video" autoplay playsinline muted></video>
-                    <div class="video-placeholder local-placeholder" id="local-placeholder">
-                        <div class="avatar-circle small">
-                            <i class="fas fa-user"></i>
-                        </div>
-                    </div>
-                    <div class="video-label">
-                        <i class="fas fa-user"></i>
-                        <span>You</span>
-                    </div>
-                    <div class="drag-handle">
-                        <i class="fas fa-grip-dots"></i>
-                    </div>
+                <div class="lobby-buttons">
+                    <button class="btn btn-create" id="btnCreate">
+                        <span class="btn-bg"></span>
+                        <i class="fas fa-plus"></i>
+                        <span class="btn-label">Create Room</span>
+                    </button>
+                    <button class="btn btn-join" id="btnJoin">
+                        <span class="btn-bg"></span>
+                        <i class="fas fa-arrow-right-to-bracket"></i>
+                        <span class="btn-label">Join Room</span>
+                    </button>
                 </div>
+
+                <p class="lobby-status" id="lobbyStatus"></p>
             </div>
 
-            <div class="controls-bar">
-                <div class="controls-wrapper">
-                    <button class="control-btn" id="btn-toggle-mic" title="Toggle Microphone">
-                        <i class="fas fa-microphone"></i>
-                        <span class="control-label">Mic</span>
-                    </button>
-                    <button class="control-btn" id="btn-toggle-camera" title="Toggle Camera">
-                        <i class="fas fa-video"></i>
-                        <span class="control-label">Camera</span>
-                    </button>
-                    <button class="control-btn" id="btn-switch-camera" title="Switch Camera">
-                        <i class="fas fa-sync-alt"></i>
-                        <span class="control-label">Flip</span>
-                    </button>
-                    <button class="control-btn btn-screen" id="btn-screen-share" title="Share Screen">
-                        <i class="fas fa-desktop"></i>
-                        <span class="control-label">Screen</span>
-                    </button>
-                    <button class="control-btn btn-hangup" id="btn-hangup" title="End Call">
-                        <i class="fas fa-phone-slash"></i>
-                        <span class="control-label">End</span>
-                    </button>
-                </div>
+            <!-- Features -->
+            <div class="features-row">
+                <div class="feature"><i class="fas fa-shield-halved"></i> E2E Encrypted</div>
+                <div class="feature"><i class="fas fa-bolt"></i> Ultra Low Latency</div>
+                <div class="feature"><i class="fas fa-globe"></i> Works Everywhere</div>
             </div>
         </div>
     </div>
 
-    <div class="toast-container" id="toast-container"></div>
+    <!-- ===== CALL SCREEN ===== -->
+    <div class="screen call-screen" id="callScreen">
 
-    <!-- Firebase SDK -->
+        <!-- Header bar -->
+        <div class="call-header">
+            <div class="header-left">
+                <span class="status-dot" id="statusDot"></span>
+                <span class="status-label" id="statusLabel">Connecting…</span>
+            </div>
+            <div class="header-center">
+                <span class="timer" id="timer">00:00</span>
+            </div>
+            <div class="header-right">
+                <span class="room-badge" id="roomBadge">
+                    <i class="fas fa-hashtag"></i>
+                    <span id="roomDisplay"></span>
+                </span>
+                <button class="btn-icon" id="btnCopy" title="Copy room code">
+                    <i class="fas fa-copy"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Videos -->
+        <div class="videos" id="videos">
+            <!-- Remote (big) -->
+            <div class="video-box remote-box" id="remoteBox">
+                <video id="remoteVideo" autoplay playsinline></video>
+                <div class="placeholder" id="remotePlaceholder">
+                    <div class="ph-avatar">
+                        <i class="fas fa-user"></i>
+                        <div class="ph-wave"></div>
+                        <div class="ph-wave delay2"></div>
+                    </div>
+                    <p>Waiting for peer<span class="dot-anim">...</span></p>
+                </div>
+                <div class="video-tag"><i class="fas fa-user"></i> Remote</div>
+            </div>
+
+            <!-- Local (PiP) -->
+            <div class="video-box local-box" id="localBox">
+                <video id="localVideo" autoplay playsinline muted></video>
+                <div class="placeholder local-ph" id="localPlaceholder">
+                    <div class="ph-avatar small">
+                        <i class="fas fa-user"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Controls -->
+        <div class="controls-bar">
+            <div class="controls-wrap">
+                <button class="ctrl-btn" id="btnMic" title="Mute / Unmute">
+                    <i class="fas fa-microphone"></i>
+                    <span>Mic</span>
+                </button>
+                <button class="ctrl-btn" id="btnCam" title="Camera On / Off">
+                    <i class="fas fa-video"></i>
+                    <span>Camera</span>
+                </button>
+                <button class="ctrl-btn" id="btnFlip" title="Switch Camera">
+                    <i class="fas fa-camera-rotate"></i>
+                    <span>Flip</span>
+                </button>
+                <button class="ctrl-btn" id="btnScreen" title="Share Screen">
+                    <i class="fas fa-desktop"></i>
+                    <span>Screen</span>
+                </button>
+                <button class="ctrl-btn hangup" id="btnHangup" title="End Call">
+                    <i class="fas fa-phone-slash"></i>
+                    <span>End</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toasts -->
+    <div class="toast-stack" id="toastStack"></div>
+
+    <!-- Firebase 9 compat -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
     <script src="app.js"></script>
