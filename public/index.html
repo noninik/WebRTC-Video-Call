@@ -62,6 +62,7 @@
       <div class="user-controls">
         <button id="toggle-mic" class="control-btn" title="Mic"><i class="fas fa-microphone"></i></button>
         <button id="toggle-cam" class="control-btn" title="Camera"><i class="fas fa-video"></i></button>
+        <button id="theme-btn" class="control-btn" title="Toggle theme"><i class="fas fa-sun"></i></button>
         <button id="settings-btn" class="control-btn" title="Settings"><i class="fas fa-gear"></i></button>
       </div>
     </div>
@@ -76,6 +77,7 @@
         <span class="top-bar-hint" id="call-status">Connecting...</span>
       </div>
       <div class="top-bar-right">
+        <button id="stats-btn" class="top-btn" title="Connection stats"><i class="fas fa-chart-simple"></i></button>
         <button id="invite-btn" class="top-btn" title="Copy invite"><i class="fas fa-link"></i></button>
         <button id="toggle-fullscreen" class="top-btn" title="Fullscreen"><i class="fas fa-expand"></i></button>
       </div>
@@ -95,12 +97,33 @@
     <div id="reactions-float"></div>
     <div id="toast-container"></div>
     <div id="copied-tooltip" class="hidden">Copied!</div>
+    <div id="ptt-indicator" class="hidden"><i class="fas fa-walkie-talkie"></i> Push-to-Talk: Hold Space</div>
+
+    <!-- Stats panel -->
+    <div id="stats-panel" class="hidden">
+      <div id="stats-header">
+        <span><i class="fas fa-chart-simple"></i> Connection Stats</span>
+        <button id="stats-close"><i class="fas fa-xmark"></i></button>
+      </div>
+      <div id="stats-body">
+        <div class="stat-row"><span class="stat-label">Ping</span><span class="stat-val" id="stat-ping">-- ms</span></div>
+        <div class="stat-row"><span class="stat-label">↑ Send</span><span class="stat-val" id="stat-send">-- kbps</span></div>
+        <div class="stat-row"><span class="stat-label">↓ Receive</span><span class="stat-val" id="stat-recv">-- kbps</span></div>
+        <div class="stat-row"><span class="stat-label">Packets Lost</span><span class="stat-val" id="stat-lost">--</span></div>
+        <div class="stat-row"><span class="stat-label">Resolution</span><span class="stat-val" id="stat-res">--</span></div>
+        <div class="stat-row"><span class="stat-label">Framerate</span><span class="stat-val" id="stat-fps">-- fps</span></div>
+        <div class="stat-row"><span class="stat-label">Codec</span><span class="stat-val" id="stat-codec">--</span></div>
+        <div class="stat-row"><span class="stat-label">Connection</span><span class="stat-val" id="stat-type">--</span></div>
+      </div>
+    </div>
 
     <div id="call-controls">
       <button id="toggle-mic-2" class="call-btn" title="Mic"><i class="fas fa-microphone"></i></button>
       <button id="toggle-cam-2" class="call-btn" title="Camera"><i class="fas fa-video"></i></button>
       <button id="switch-cam-btn" class="call-btn" title="Switch Camera"><i class="fas fa-camera-rotate"></i></button>
       <button id="toggle-screen-btn" class="call-btn" title="Share Screen"><i class="fas fa-display"></i></button>
+      <button id="ptt-btn" class="call-btn" title="Push-to-Talk"><i class="fas fa-walkie-talkie"></i></button>
+      <button id="soundboard-btn" class="call-btn" title="Soundboard"><i class="fas fa-music"></i></button>
       <div class="reactions-bar">
         <button class="react-btn" data-emoji="👍">👍</button>
         <button class="react-btn" data-emoji="🎉">🎉</button>
@@ -109,44 +132,46 @@
         <button class="react-btn" data-emoji="❤️">❤️</button>
         <button class="react-btn" data-emoji="💀">💀</button>
       </div>
-      <div class="volume-control">
-        <i class="fas fa-volume-high"></i>
-        <input type="range" id="volume-slider" min="0" max="100" value="100"/>
-      </div>
+      <div class="volume-control"><i class="fas fa-volume-high"></i><input type="range" id="volume-slider" min="0" max="100" value="100"/></div>
       <button id="chat-toggle-btn" class="call-btn" title="Chat"><i class="fas fa-comment"></i></button>
       <button id="hang-up" class="call-btn danger" title="Leave"><i class="fas fa-phone-slash"></i></button>
     </div>
   </div>
 
+  <!-- SOUNDBOARD -->
+  <div id="soundboard-panel" class="hidden">
+    <div id="sb-header"><span><i class="fas fa-music"></i> Soundboard</span><button id="sb-close"><i class="fas fa-xmark"></i></button></div>
+    <div id="sb-grid">
+      <button class="sb-btn" data-sound="airhorn">📯 Air Horn</button>
+      <button class="sb-btn" data-sound="drum">🥁 Drum</button>
+      <button class="sb-btn" data-sound="tada">🎉 Tada</button>
+      <button class="sb-btn" data-sound="fail">😂 Fail</button>
+      <button class="sb-btn" data-sound="laser">🔫 Laser</button>
+      <button class="sb-btn" data-sound="boing">🏀 Boing</button>
+      <button class="sb-btn" data-sound="bell">🔔 Bell</button>
+      <button class="sb-btn" data-sound="whoosh">💨 Whoosh</button>
+      <button class="sb-btn" data-sound="pop">💥 Pop</button>
+      <button class="sb-btn" data-sound="buzzer">🚨 Buzzer</button>
+      <button class="sb-btn" data-sound="whistle">😙 Whistle</button>
+      <button class="sb-btn" data-sound="clap">👏 Clap</button>
+    </div>
+  </div>
+
   <!-- CHAT -->
   <div id="chat-panel" class="hidden">
-    <div id="chat-header">
-      <span><i class="fas fa-comment"></i> Chat</span>
-      <button id="chat-close"><i class="fas fa-xmark"></i></button>
-    </div>
+    <div id="chat-header"><span><i class="fas fa-comment"></i> Chat</span><button id="chat-close"><i class="fas fa-xmark"></i></button></div>
     <div id="chat-messages"></div>
     <div id="typing-indicator" class="hidden"><span id="typing-text">typing...</span></div>
-
     <div id="emoji-picker" class="hidden">
       <div class="picker-search"><input type="text" id="emoji-search" placeholder="Search emoji..."/></div>
-      <div id="emoji-cats">
-        <button class="ecat active" data-c="frequent">⭐</button>
-        <button class="ecat" data-c="smileys">😀</button>
-        <button class="ecat" data-c="people">👋</button>
-        <button class="ecat" data-c="animals">🐱</button>
-        <button class="ecat" data-c="food">🍕</button>
-        <button class="ecat" data-c="objects">💡</button>
-        <button class="ecat" data-c="symbols">❤️</button>
-      </div>
+      <div id="emoji-cats"><button class="ecat active" data-c="frequent">⭐</button><button class="ecat" data-c="smileys">😀</button><button class="ecat" data-c="people">👋</button><button class="ecat" data-c="animals">🐱</button><button class="ecat" data-c="food">🍕</button><button class="ecat" data-c="objects">💡</button><button class="ecat" data-c="symbols">❤️</button></div>
       <div id="emoji-list"></div>
     </div>
-
     <div id="gif-picker" class="hidden">
       <div class="picker-search"><input type="text" id="gif-search" placeholder="Search GIFs..."/></div>
       <div id="gif-results"></div>
       <div id="gif-powered">Powered by Tenor</div>
     </div>
-
     <div id="chat-input-area">
       <button id="emoji-btn" class="chat-extra-btn" title="Emoji"><i class="fas fa-face-smile"></i></button>
       <button id="gif-btn" class="chat-extra-btn" title="GIF">GIF</button>
@@ -159,10 +184,7 @@
   <div id="settings-modal" class="modal hidden">
     <div class="modal-backdrop"></div>
     <div class="modal-content">
-      <div class="modal-header">
-        <h2><i class="fas fa-gear"></i> Settings</h2>
-        <button class="modal-close" id="settings-close"><i class="fas fa-xmark"></i></button>
-      </div>
+      <div class="modal-header"><h2><i class="fas fa-gear"></i> Settings</h2><button class="modal-close" id="settings-close"><i class="fas fa-xmark"></i></button></div>
       <div class="modal-body">
         <div class="sg"><label>Microphone</label><select id="mic-select"></select></div>
         <div class="sg"><label>Speaker</label><select id="speaker-select"></select></div>
@@ -174,7 +196,7 @@
     </div>
   </div>
 
-  <!-- INDIVIDUAL VOLUME MODAL -->
+  <!-- VOLUME MODAL -->
   <div id="vol-modal" class="hidden">
     <div class="vol-modal-inner">
       <div class="vol-modal-name" id="vol-modal-name">User</div>
