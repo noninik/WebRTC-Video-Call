@@ -29,23 +29,15 @@ wss.on('connection', (ws) => {
     try { msg = JSON.parse(data); } catch { return; }
 
     if (msg.type === 'join') {
-      // Prevent double join
-      if (currentRoom) return;
-
       currentRoom = msg.room;
       nickname = (msg.nickname || '').trim().slice(0, 20) || 'User ' + odStr;
       if (!rooms.has(currentRoom)) rooms.set(currentRoom, new Map());
       const room = rooms.get(currentRoom);
-
-      // Check if already in room
-      if (room.has(odStr)) return;
-
       if (room.size >= MAX_USERS) {
         ws.send(JSON.stringify({ type: 'full' }));
         currentRoom = null;
         return;
       }
-
       const existingUsers = [];
       room.forEach((peer, peerId) => {
         existingUsers.push({ odStr: peerId, nickname: peer.nickname });
@@ -112,7 +104,7 @@ wss.on('connection', (ws) => {
 
     if (msg.type === 'soundboard') {
       if (currentRoom && rooms.has(currentRoom)) {
-        rooms.get(currentRoom).forEach((peer) => {
+        rooms.get(currentRoom).forEach((peer, peerId) => {
           if (peer.readyState === WebSocket.OPEN) {
             peer.send(JSON.stringify({ type: 'soundboard', from: odStr, nickname, sound: msg.sound }));
           }
@@ -132,7 +124,6 @@ wss.on('connection', (ws) => {
         }
       });
       if (room.size === 0) rooms.delete(currentRoom);
-      currentRoom = null;
     }
   });
 });
