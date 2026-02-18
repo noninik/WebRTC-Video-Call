@@ -5,7 +5,7 @@ const path = require('path');
 
 const app = express();
 const server = http.createServer(app);
-const wss = new WebSocket.Server({ server });
+const wss = new WebSocket.Server({ server, path: '/ws' });
 
 app.use(express.static(path.join(__dirname, 'public')));
 
@@ -29,15 +29,23 @@ wss.on('connection', (ws) => {
     try { msg = JSON.parse(data); } catch { return; }
 
     if (msg.type === 'join') {
+      // Prevent double join
+      if (currentRoom) return;
+
       currentRoom = msg.room;
       nickname = (msg.nickname || '').trim().slice(0, 20) || 'User ' + odStr;
       if (!rooms.has(currentRoom)) rooms.set(currentRoom, new Map());
       const room = rooms.get(currentRoom);
+
+      // Check if already in room
+      if (room.has(odStr)) return;
+
       if (room.size >= MAX_USERS) {
         ws.send(JSON.stringify({ type: 'full' }));
         currentRoom = null;
         return;
       }
+
       const existingUsers = [];
       room.forEach((peer, peerId) => {
         existingUsers.push({ odStr: peerId, nickname: peer.nickname });
@@ -101,6 +109,17 @@ wss.on('connection', (ws) => {
       }
       return;
     }
+
+    if (msg.type === 'soundboard') {
+      if (currentRoom && rooms.has(currentRoom)) {
+        rooms.get(currentRoom).forEach((peer) => {
+          if (peer.readyState === WebSocket.OPEN) {
+            peer.send(JSON.stringify({ type: 'soundboard', from: odStr, nickname, sound: msg.sound }));
+          }
+        });
+      }
+      return;
+    }
   });
 
   ws.on('close', () => {
@@ -113,6 +132,7 @@ wss.on('connection', (ws) => {
         }
       });
       if (room.size === 0) rooms.delete(currentRoom);
+      currentRoom = null;
     }
   });
 });
@@ -125,5 +145,5 @@ setInterval(() => {
   });
 }, 25000);
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 7860;
 server.listen(PORT, () => console.log('Server on port ' + PORT));
